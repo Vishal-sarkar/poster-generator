@@ -1,0 +1,6 @@
+{
+  "name": "Event Poster Generator",
+  "description": "Generate personalized event posters with a Neumorphic soft UI interface and interactive photo cropping.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
