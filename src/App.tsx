@@ -31,6 +31,271 @@ import {
   FormState 
 } from './utils/posterRenderer';
 
+interface DropdownProps {
+  options: string[];
+  selected: string;
+  onChange: (val: string) => void;
+  labelId: string;
+}
+
+function CustomDropdown({ options, selected, onChange, labelId }: DropdownProps) {
+  const [isOpen, setIsOpen] = useState(false);
+  const dropdownRef = useRef<HTMLDivElement | null>(null);
+
+  useEffect(() => {
+    const handleClickOutside = (event: any) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setIsOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  return (
+    <div className="relative w-full" ref={dropdownRef}>
+      <button
+        id={labelId}
+        type="button"
+        onClick={() => setIsOpen(!isOpen)}
+        className="w-full flex items-center justify-between px-4 py-3 bg-white border border-slate-200 rounded-xl font-semibold text-sm text-neutral-900 focus:outline-none focus:border-black focus:ring-1 focus:ring-black transition cursor-pointer"
+      >
+        <span>{selected}</span>
+        <svg
+          className={`w-4 h-4 text-slate-500 transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`}
+          fill="none"
+          stroke="currentColor"
+          viewBox="0 0 24 24"
+        >
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
+        </svg>
+      </button>
+
+      {isOpen && (
+        <div className="absolute left-0 right-0 mt-1 bg-white border border-slate-200 rounded-xl shadow-lg z-50 overflow-hidden">
+          <ul className="py-1">
+            {options.map((opt) => {
+              const isSelected = selected === opt;
+              return (
+                <li key={opt}>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      onChange(opt);
+                      setIsOpen(false);
+                    }}
+                    className={`w-full text-left px-4 py-2.5 text-sm transition cursor-pointer ${
+                      isSelected
+                        ? 'bg-neutral-900 text-white font-bold'
+                        : 'text-neutral-700 hover:bg-slate-50 hover:text-black'
+                    }`}
+                  >
+                    {opt}
+                  </button>
+                </li>
+              );
+            })}
+          </ul>
+        </div>
+      )}
+    </div>
+  );
+}
+
+interface DatePickerProps {
+  selected: string; // "YYYY-MM-DD"
+  onChange: (val: string) => void;
+  labelId: string;
+}
+
+function CustomDatePicker({ selected, onChange, labelId }: DatePickerProps) {
+  const [isOpen, setIsOpen] = useState(false);
+  
+  // Parse initial selected date or default to today
+  const initialDate = selected ? new Date(selected) : new Date();
+  const [currentYear, setCurrentYear] = useState(initialDate.getFullYear() || new Date().getFullYear());
+  const [currentMonth, setCurrentMonth] = useState(initialDate.getMonth() || new Date().getMonth());
+
+  const dropdownRef = useRef<HTMLDivElement | null>(null);
+
+  useEffect(() => {
+    const handleClickOutside = (event: any) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setIsOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  const formatDateString = (y: number, m: number, d: number) => {
+    const mm = String(m + 1).padStart(2, '0');
+    const dd = String(d).padStart(2, '0');
+    return `${y}-${mm}-${dd}`;
+  };
+
+  const MONTHS = [
+    'January', 'February', 'March', 'April', 'May', 'June',
+    'July', 'August', 'September', 'October', 'November', 'December'
+  ];
+  const DAYS_OF_WEEK = ['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'];
+
+  const handlePrevMonth = () => {
+    if (currentMonth === 0) {
+      setCurrentMonth(11);
+      setCurrentYear(currentYear - 1);
+    } else {
+      setCurrentMonth(currentMonth - 1);
+    }
+  };
+
+  const handleNextMonth = () => {
+    if (currentMonth === 11) {
+      setCurrentMonth(0);
+      setCurrentYear(currentYear + 1);
+    } else {
+      setCurrentMonth(currentMonth + 1);
+    }
+  };
+
+  const firstDayIndex = new Date(currentYear, currentMonth, 1).getDay();
+  const totalDays = new Date(currentYear, currentMonth + 1, 0).getDate();
+  const prevMonthTotalDays = new Date(currentYear, currentMonth, 0).getDate();
+
+  const calendarDays: { day: number; isCurrentMonth: boolean; dateStr: string }[] = [];
+
+  for (let i = firstDayIndex - 1; i >= 0; i--) {
+    const d = prevMonthTotalDays - i;
+    const m = currentMonth === 0 ? 11 : currentMonth - 1;
+    const y = currentMonth === 0 ? currentYear - 1 : currentYear;
+    calendarDays.push({
+      day: d,
+      isCurrentMonth: false,
+      dateStr: formatDateString(y, m, d)
+    });
+  }
+
+  for (let d = 1; d <= totalDays; d++) {
+    calendarDays.push({
+      day: d,
+      isCurrentMonth: true,
+      dateStr: formatDateString(currentYear, currentMonth, d)
+    });
+  }
+
+  const remainingCells = 42 - calendarDays.length;
+  for (let d = 1; d <= remainingCells; d++) {
+    const m = currentMonth === 11 ? 0 : currentMonth + 1;
+    const y = currentMonth === 11 ? currentYear + 1 : currentYear;
+    calendarDays.push({
+      day: d,
+      isCurrentMonth: false,
+      dateStr: formatDateString(y, m, d)
+    });
+  }
+
+  const getDisplayDate = (dateStr: string) => {
+    if (!dateStr) return 'Select Date';
+    try {
+      const d = new Date(dateStr);
+      if (isNaN(d.getTime())) return dateStr;
+      const day = d.getDate();
+      const monthShort = MONTHS[d.getMonth()].substring(0, 3);
+      const year = d.getFullYear();
+      return `${day} ${monthShort} ${year}`;
+    } catch {
+      return dateStr;
+    }
+  };
+
+  return (
+    <div className="relative w-full" ref={dropdownRef}>
+      <button
+        id={labelId}
+        type="button"
+        onClick={() => {
+          setIsOpen(!isOpen);
+          if (selected) {
+            const selDate = new Date(selected);
+            if (!isNaN(selDate.getTime())) {
+              setCurrentYear(selDate.getFullYear());
+              setCurrentMonth(selDate.getMonth());
+            }
+          }
+        }}
+        className="w-full flex items-center px-4 py-3 bg-white border border-slate-200 rounded-xl font-medium text-sm text-neutral-900 focus:outline-none focus:border-black focus:ring-1 focus:ring-black transition cursor-pointer text-left"
+      >
+        <Calendar className="w-4 h-4 text-slate-400 mr-3" />
+        <span className="flex-1 font-semibold">{getDisplayDate(selected)}</span>
+      </button>
+
+      {isOpen && (
+        <div className="absolute left-0 right-0 md:right-auto md:w-80 mt-1 bg-white border border-slate-200 rounded-xl shadow-lg z-50 p-4">
+          <div className="flex items-center justify-between mb-4">
+            <button
+              type="button"
+              onClick={handlePrevMonth}
+              className="p-1 hover:bg-slate-100 rounded-lg cursor-pointer transition text-neutral-600"
+            >
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 19l-7-7 7-7" />
+              </svg>
+            </button>
+            
+            <span className="font-bold text-sm text-neutral-900">
+              {MONTHS[currentMonth]} {currentYear}
+            </span>
+
+            <button
+              type="button"
+              onClick={handleNextMonth}
+              className="p-1 hover:bg-slate-100 rounded-lg cursor-pointer transition text-neutral-600"
+            >
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7" />
+              </svg>
+            </button>
+          </div>
+
+          <div className="grid grid-cols-7 gap-1 text-center mb-2">
+            {DAYS_OF_WEEK.map(day => (
+              <span key={day} className="text-[10px] font-bold text-slate-400 uppercase">
+                {day}
+              </span>
+            ))}
+          </div>
+
+          <div className="grid grid-cols-7 gap-1 text-center">
+            {calendarDays.map((item, idx) => {
+              const isSelected = selected === item.dateStr;
+              const isToday = formatDateString(new Date().getFullYear(), new Date().getMonth(), new Date().getDate()) === item.dateStr;
+              return (
+                <button
+                  key={`${item.dateStr}-${idx}`}
+                  type="button"
+                  onClick={() => {
+                    onChange(item.dateStr);
+                    setIsOpen(false);
+                  }}
+                  className={`py-1.5 text-xs font-semibold rounded-lg cursor-pointer transition flex items-center justify-center ${
+                    isSelected
+                      ? 'bg-neutral-900 text-white font-bold'
+                      : item.isCurrentMonth
+                      ? 'text-neutral-900 hover:bg-slate-100'
+                      : 'text-slate-300 hover:bg-slate-50'
+                  } ${isToday && !isSelected ? 'border border-neutral-900' : ''}`}
+                >
+                  {item.day}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 export default function App() {
   // Primary unified form state
   const [state, setState] = useState<FormState>({
@@ -471,38 +736,27 @@ export default function App() {
 
             {/* Date Input */}
             <div className="flex flex-col space-y-2">
-              <label htmlFor="date-desktop" className="text-[10px] font-bold text-neutral-500 uppercase tracking-wider">Event Completion Date</label>
-              <div className="relative uber-input-container flex items-center px-4 py-3">
-                <Calendar className="w-4 h-4 text-slate-400 mr-3" />
-                <input
-                  id="date-desktop"
-                  type="date"
-                  value={state.date}
-                  onChange={(e) => setState(prev => ({ ...prev, date: e.target.value }))}
-                  className="bg-transparent text-neutral-900 w-full outline-none font-medium text-sm cursor-pointer focus:outline-none"
-                />
-              </div>
+              <label className="text-[10px] font-bold text-neutral-500 uppercase tracking-wider">Event Completion Date</label>
+              <CustomDatePicker
+                selected={state.date}
+                onChange={(val) => setState(prev => ({ ...prev, date: val }))}
+                labelId="date-desktop"
+              />
             </div>
 
             {/* Target Distance Input */}
             <div className="flex flex-col space-y-2">
-              <label htmlFor="target-desktop" className="text-[10px] font-bold text-neutral-500 uppercase tracking-wider">Target Milestone</label>
-              <div className="grid grid-cols-2 gap-3">
-                <div className="uber-input-container px-2 py-2">
-                  <select
-                    id="target-desktop"
-                    value={targetPreset}
-                    onChange={(e) => setTargetPreset(e.target.value)}
-                    className="bg-transparent text-neutral-900 w-full outline-none font-medium text-sm cursor-pointer py-1 px-2 focus:outline-none"
-                  >
-                    {targetOptions.map(opt => (
-                      <option key={opt} value={opt}>{opt}</option>
-                    ))}
-                  </select>
-                </div>
+              <label className="text-[10px] font-bold text-neutral-500 uppercase tracking-wider">Target Milestone</label>
+              <div className={`grid gap-3 ${targetPreset === 'Custom' ? 'grid-cols-2' : 'grid-cols-1'}`}>
+                <CustomDropdown
+                  options={targetOptions}
+                  selected={targetPreset}
+                  onChange={setTargetPreset}
+                  labelId="target-desktop"
+                />
 
                 {targetPreset === 'Custom' && (
-                  <div className="uber-input-container flex items-center px-3 py-1">
+                  <div className="uber-input-container flex items-center px-4 py-3">
                     <input
                       type="text"
                       placeholder="e.g. 75 KM"
@@ -821,34 +1075,23 @@ export default function App() {
 
               {/* Date */}
               <div className="flex flex-col space-y-1.5">
-                <label htmlFor="date-mobile" className="text-[10px] font-bold text-neutral-500 uppercase tracking-wider">Completion Date</label>
-                <div className="relative uber-input-container flex items-center px-4 py-3">
-                  <Calendar className="w-4 h-4 text-slate-400 mr-3" />
-                  <input
-                    id="date-mobile"
-                    type="date"
-                    value={state.date}
-                    onChange={(e) => setState(prev => ({ ...prev, date: e.target.value }))}
-                    className="bg-transparent text-neutral-900 w-full outline-none font-bold text-sm cursor-pointer focus:outline-none"
-                  />
-                </div>
+                <label className="text-[10px] font-bold text-neutral-500 uppercase tracking-wider">Completion Date</label>
+                <CustomDatePicker
+                  selected={state.date}
+                  onChange={(val) => setState(prev => ({ ...prev, date: val }))}
+                  labelId="date-mobile"
+                />
               </div>
 
               {/* Target Dropdown / presets */}
               <div className="flex flex-col space-y-1.5">
-                <label htmlFor="target-mobile" className="text-[10px] font-bold text-neutral-500 uppercase tracking-wider">Target Distance</label>
-                <div className="uber-input-container px-2 py-2">
-                  <select
-                    id="target-mobile"
-                    value={targetPreset}
-                    onChange={(e) => setTargetPreset(e.target.value)}
-                    className="bg-transparent text-neutral-900 w-full outline-none font-bold text-sm cursor-pointer py-1 px-2 focus:outline-none"
-                  >
-                    {targetOptions.map(opt => (
-                      <option key={opt} value={opt}>{opt}</option>
-                    ))}
-                  </select>
-                </div>
+                <label className="text-[10px] font-bold text-neutral-500 uppercase tracking-wider">Target Distance</label>
+                <CustomDropdown
+                  options={targetOptions}
+                  selected={targetPreset}
+                  onChange={setTargetPreset}
+                  labelId="target-mobile"
+                />
 
                 {targetPreset === 'Custom' && (
                   <div className="uber-input-container flex items-center px-4 py-3.5 mt-2">
