@@ -1,4 +1,23 @@
 @import "tailwindcss";
+@import url('https://fonts.googleapis.com/css2?family=Dancing+Script:wght@600;700&display=swap');
+
+@theme {
+  --font-serif-cert: "Cinzel", serif;
+  --font-signature: "Dancing Script", cursive;
+  --font-display-cert: "Space Grotesk", sans-serif;
+  --font-mono-cert: "JetBrains Mono", monospace;
+  --font-heavy-cert: "Montserrat", sans-serif;
+}
+
+/* Custom print and aspect-ratio helper classes */
+.certificate-container {
+  aspect-ratio: 1414 / 970;
+  width: 100%;
+  max-width: 1414px;
+  position: relative;
+  overflow: hidden;
+  box-sizing: border-box;
+}
 
 @layer base {
   body {

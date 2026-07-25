@@ -30,6 +30,11 @@ import {
   TEMPLATES, 
   FormState 
 } from './utils/posterRenderer';
+// @ts-ignore
+import cyclingBg from '../assets/cycling_bg.png';
+// @ts-ignore
+import runWalkBg from '../assets/run_walk_bg.jpg';
+import CertificateApp from './CertificateApp';
 
 interface DropdownProps {
   options: string[];
@@ -296,18 +301,41 @@ function CustomDatePicker({ selected, onChange, labelId }: DatePickerProps) {
   );
 }
 
-export default function App() {
+function PosterGenerator() {
+  // Pre-load the custom cycling background template image
+  const [loadedCyclingBg, setLoadedCyclingBg] = useState<HTMLImageElement | null>(null);
+  const [loadedRunWalkBg, setLoadedRunWalkBg] = useState<HTMLImageElement | null>(null);
+
+  useEffect(() => {
+    const img = new Image();
+    img.src = cyclingBg;
+    img.onload = () => {
+      setLoadedCyclingBg(img);
+    };
+
+    const img2 = new Image();
+    img2.src = runWalkBg;
+    img2.onload = () => {
+      setLoadedRunWalkBg(img2);
+    };
+  }, []);
+
   // Primary unified form state
-  const [state, setState] = useState<FormState>({
-    name: 'SACHIDA YADAV',
-    date: '2026-01-26',
-    target: '100 KM',
-    photoUrl: null,
-    templateId: 'republic-cycling',
-    photoX: 0,
-    photoY: 0,
-    photoScale: 1.0,
-    photoRotation: 0,
+  const [state, setState] = useState<FormState>(() => {
+    const path = typeof window !== 'undefined' ? window.location.pathname : '';
+    const isWalkRunning = path.includes('/walk-runing');
+    return {
+      name: 'SACHIDA YADAV',
+      date: '2026-01-26',
+      target: '100 KM',
+      photoUrl: null,
+      templateId: 'cycling-challenge',
+      photoX: 0,
+      photoY: 0,
+      photoScale: 1.0,
+      photoRotation: 0,
+      activityRoute: isWalkRunning ? 'walk-runing' : 'cycling',
+    };
   });
 
   // Flow & View States
@@ -362,15 +390,43 @@ export default function App() {
     };
   }, [state.photoUrl]);
 
+  // Redirect root path to /cycling on mount
+  useEffect(() => {
+    const path = window.location.pathname;
+    if (path === '/' || path === '') {
+      window.history.replaceState({}, '', '/cycling');
+    }
+  }, []);
+
+  // Listen for browser navigation (popstate) to keep the app activity route in sync with URL
+  useEffect(() => {
+    const handlePopState = () => {
+      const path = window.location.pathname;
+      const isWalkRunning = path.includes('/walk-runing');
+      setState(prev => {
+        const nextRoute = isWalkRunning ? 'walk-runing' as const : 'cycling' as const;
+        if (prev.activityRoute !== nextRoute) {
+          return {
+            ...prev,
+            activityRoute: nextRoute
+          };
+        }
+        return prev;
+      });
+    };
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
+  }, []);
+
   // Redraw both canvases instantly when state, loadedPhoto, dragging state, or step/view state changes
   useEffect(() => {
     if (desktopCanvasRef.current) {
-      renderPoster(desktopCanvasRef.current, state, loadedPhoto, isDragging);
+      renderPoster(desktopCanvasRef.current, state, loadedPhoto, loadedCyclingBg, loadedRunWalkBg, isDragging);
     }
     if (mobileCanvasRef.current) {
-      renderPoster(mobileCanvasRef.current, state, loadedPhoto, isDragging);
+      renderPoster(mobileCanvasRef.current, state, loadedPhoto, loadedCyclingBg, loadedRunWalkBg, isDragging);
     }
-  }, [state, loadedPhoto, isDragging, mobileStep, isGenerated]);
+  }, [state, loadedPhoto, loadedCyclingBg, loadedRunWalkBg, isDragging, mobileStep, isGenerated]);
 
   // Hook scroll wheel zooming directly onto canvases to prevent page-level scrolling
   useEffect(() => {
@@ -662,10 +718,13 @@ export default function App() {
         canvas.toBlob(async (blob) => {
           if (!blob) return;
           const file = new File([blob], 'my_event_poster.png', { type: 'image/png' });
+          const isWalkRunning = state.templateId === 'run-walk-challenge';
+          const challengeName = isWalkRunning ? 'Run Walk Challenge' : 'Cycling Challenge';
+          const emojis = isWalkRunning ? '🏃‍♂️🚶‍♀️🏆' : '🚲🏆';
           const shareData = {
             files: [file],
             title: `${state.name}'s Finisher Poster`,
-            text: `I just completed my target of ${state.target} in the Cycling Challenge! Check out my finisher poster! 🚲🏆`,
+            text: `I just completed my target of ${state.target} in the ${challengeName}! Check out my finisher poster! ${emojis}`,
           };
 
           if (navigator.canShare(shareData)) {
@@ -924,11 +983,9 @@ export default function App() {
                     <div 
                       className="w-10 h-10 rounded-lg shadow-inner flex items-center justify-center text-base"
                       style={{ 
-                        background: tpl.id === 'republic-cycling' 
-                          ? 'linear-gradient(135deg, #246e88, #144252)' 
-                          : tpl.id === 'midnight-endurance'
-                          ? 'linear-gradient(135deg, #1a1f2c, #090a0f)'
-                          : 'linear-gradient(135deg, #2d124d, #e65100)'
+                        background: tpl.id === 'cycling-challenge' 
+                        ? 'linear-gradient(135deg, #083c91, #d4fb02)' 
+                        : 'linear-gradient(135deg, #08253a, #c084fc)'
                       }}
                     >
                       🎨
@@ -1262,11 +1319,9 @@ export default function App() {
                         <div 
                           className="w-10 h-10 rounded-lg mx-auto shadow-inner mb-1.5"
                           style={{ 
-                            background: tpl.id === 'republic-cycling' 
-                              ? 'linear-gradient(135deg, #246e88, #144252)' 
-                              : tpl.id === 'midnight-endurance'
-                              ? 'linear-gradient(135deg, #1a1f2c, #090a0f)'
-                              : 'linear-gradient(135deg, #2d124d, #e65100)'
+                            background: tpl.id === 'cycling-challenge' 
+                              ? 'linear-gradient(135deg, #083c91, #d4fb02)' 
+                              : 'linear-gradient(135deg, #08253a, #c084fc)'
                           }}
                         />
                         <div className={`font-extrabold text-[10px] truncate uppercase ${isSelected ? 'text-white' : 'text-slate-800'}`}>{tpl.name.split(' ')[0]}</div>
@@ -1363,4 +1418,24 @@ export default function App() {
 
     </div>
   );
+}
+
+export default function App() {
+  const [path, setPath] = useState(() => typeof window !== 'undefined' ? window.location.pathname : '/cycling');
+
+  useEffect(() => {
+    const handlePopState = () => {
+      setPath(window.location.pathname);
+    };
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
+  }, []);
+
+  const isCertificateRoute = path.includes('/certificate') || path.includes('/certificates');
+
+  if (isCertificateRoute) {
+    return <CertificateApp />;
+  }
+
+  return <PosterGenerator />;
 }

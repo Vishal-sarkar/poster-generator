@@ -13,41 +13,33 @@ export interface TemplateConfig {
   frameHeight: number;
   frameRadius: number;
   themeColor: string;
+  frameRotation?: number;
 }
 
 export const TEMPLATES: TemplateConfig[] = [
   {
-    id: 'republic-cycling',
-    name: 'Republic Day Cycling',
-    description: 'Deep teal themed with painted tricolor swoosh, bronze medal & orange footer',
-    frameX: 520,
-    frameY: 180,
-    frameWidth: 500,
-    frameHeight: 650,
-    frameRadius: 40,
-    themeColor: '#1E5E75'
-  },
-  {
-    id: 'midnight-endurance',
-    name: 'Midnight Aero Speed',
-    description: 'Stealth black with glowing neon-lime accents, speed streaks & silver medal',
-    frameX: 530,
-    frameY: 190,
-    frameWidth: 490,
-    frameHeight: 630,
-    frameRadius: 20,
-    themeColor: '#12141c'
-  },
-  {
-    id: 'golden-horizon',
-    name: 'Golden Horizon Trail',
-    description: 'Scenic warm purple sunset, mountain silhouettes & gold medal',
-    frameX: 520,
-    frameY: 185,
-    frameWidth: 500,
-    frameHeight: 640,
+    id: 'cycling-challenge',
+    name: 'Cycling Distance Challenge',
+    description: 'Dynamic blue background with yellow accents and a slanted name banner',
+    frameX: 580,
+    frameY: 95,
+    frameWidth: 530,
+    frameHeight: 770,
     frameRadius: 30,
-    themeColor: '#2d124d'
+    themeColor: '#0b4295',
+    frameRotation: 3.8
+  },
+  {
+    id: 'run-walk-challenge',
+    name: 'Run Walk Challenge',
+    description: 'Textured dark blue halftone pattern with a tilted Polaroid frame',
+    frameX: 580,
+    frameY: 90,
+    frameWidth: 530,
+    frameHeight: 880,
+    frameRadius: 15,
+    themeColor: '#083358',
+    frameRotation: -4
   }
 ];
 
@@ -61,6 +53,7 @@ export interface FormState {
   photoY: number;
   photoScale: number;
   photoRotation: number;
+  activityRoute?: 'cycling' | 'walk-runing';
 }
 
 // Draw a rounded rectangle on a 2D canvas context
@@ -339,6 +332,66 @@ export function drawMedal(
   ctx.restore();
 }
 
+// Draw custom vector globe icon
+export function drawGlobeIcon(ctx: CanvasRenderingContext2D, x: number, y: number, radius: number) {
+  ctx.save();
+  ctx.strokeStyle = '#ffffff';
+  ctx.lineWidth = 2;
+  
+  // Outer circle
+  ctx.beginPath();
+  ctx.arc(x, y, radius, 0, Math.PI * 2);
+  ctx.stroke();
+  
+  // Horizontal line (equator)
+  ctx.beginPath();
+  ctx.moveTo(x - radius, y);
+  ctx.lineTo(x + radius, y);
+  ctx.stroke();
+  
+  // Vertical ellipse (meridian)
+  ctx.beginPath();
+  ctx.ellipse(x, y, radius * 0.5, radius, 0, 0, Math.PI * 2);
+  ctx.stroke();
+  
+  ctx.restore();
+}
+
+// Draw dynamic vector landscape placeholder (sky, green hills, and cloud)
+export function drawLandscapePlaceholder(ctx: CanvasRenderingContext2D, px: number, py: number, pw: number, ph: number) {
+  ctx.save();
+  
+  // Sky
+  ctx.fillStyle = '#a5f3fc';
+  ctx.fillRect(px, py, pw, ph);
+
+  // Hill 1 (rear)
+  ctx.fillStyle = '#8ade5d';
+  ctx.beginPath();
+  ctx.arc(px + pw * 0.25, py + ph * 0.85, pw * 0.8, 0, Math.PI * 2);
+  ctx.fill();
+
+  // Hill 2 (front)
+  ctx.fillStyle = '#4cb723';
+  ctx.beginPath();
+  ctx.arc(px + pw * 0.75, py + ph * 0.9, pw * 0.8, 0, Math.PI * 2);
+  ctx.fill();
+
+  // Cloud
+  ctx.fillStyle = '#ffffff';
+  const cloudX = px + pw * 0.5;
+  const cloudY = py + ph * 0.3;
+  ctx.beginPath();
+  ctx.arc(cloudX, cloudY, pw * 0.12, 0, Math.PI * 2);
+  ctx.arc(cloudX - pw * 0.1, cloudY + pw * 0.02, pw * 0.09, 0, Math.PI * 2);
+  ctx.arc(cloudX + pw * 0.1, cloudY + pw * 0.02, pw * 0.09, 0, Math.PI * 2);
+  ctx.arc(cloudX, cloudY + pw * 0.05, pw * 0.1, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.fillRect(cloudX - pw * 0.18, cloudY + pw * 0.02, pw * 0.36, pw * 0.07);
+
+  ctx.restore();
+}
+
 /**
  * Main draw function.
  * Combines all canvas operations to render the high fidelity 1080x1080 event poster.
@@ -347,6 +400,8 @@ export function renderPoster(
   canvas: HTMLCanvasElement,
   state: FormState,
   loadedPhoto: HTMLImageElement | null,
+  loadedCyclingBg: HTMLImageElement | null,
+  loadedRunWalkBg: HTMLImageElement | null,
   isInteractive: boolean = false
 ) {
   const ctx = canvas.getContext('2d');
@@ -361,9 +416,13 @@ export function renderPoster(
   const { templateId, name, date, target, photoX, photoY, photoScale, photoRotation } = state;
   const config = TEMPLATES.find(t => t.id === templateId) || TEMPLATES[0];
 
-  // Helper to format Date beautifully (e.g. "26th Jul 2026")
+  // Helper to format Date beautifully (e.g. "1st Nov-30th Nov")
   const formatDateStr = (dateStr: string) => {
-    if (!dateStr) return '26th Jan-28th Jan';
+    if (!dateStr) return '1ST NOV-30TH NOV';
+    // If it is already a custom string, return it as-is
+    if (dateStr.includes('-') || dateStr.toLowerCase().includes('nov') || dateStr.toLowerCase().includes('jan')) {
+      return dateStr;
+    }
     try {
       const d = new Date(dateStr);
       if (isNaN(d.getTime())) return dateStr;
@@ -373,10 +432,10 @@ export function renderPoster(
       const year = d.getFullYear();
       
       // Suffix
-      let suffix = 'th';
-      if (day === 1 || day === 21 || day === 31) suffix = 'st';
-      else if (day === 2 || day === 22) suffix = 'nd';
-      else if (day === 3 || day === 23) suffix = 'rd';
+      let suffix = 'TH';
+      if (day === 1 || day === 21 || day === 31) suffix = 'ST';
+      else if (day === 2 || day === 22) suffix = 'ND';
+      else if (day === 3 || day === 23) suffix = 'RD';
 
       return `${day}${suffix} ${month} ${year}`;
     } catch {
@@ -387,564 +446,584 @@ export function renderPoster(
   const formattedDate = formatDateStr(date);
 
   // --------------------------------------------------
-  // 1. DRAW BACKGROUND LAYER FIRST (So photo and other overlays are visible on top!)
+  // 1. DRAW BACKGROUND LAYER FIRST
   // --------------------------------------------------
-  if (config.id === 'republic-cycling') {
-    const bgGrad = ctx.createLinearGradient(0, 0, 0, 1080);
-    bgGrad.addColorStop(0, '#246e88');
-    bgGrad.addColorStop(1, '#144252');
-    ctx.fillStyle = bgGrad;
-    ctx.fillRect(0, 0, 1080, 1080);
-  } else if (config.id === 'midnight-endurance') {
-    const bgGrad = ctx.createRadialGradient(540, 540, 100, 540, 540, 800);
-    bgGrad.addColorStop(0, '#1a1f2c');
-    bgGrad.addColorStop(1, '#090a0f');
-    ctx.fillStyle = bgGrad;
-    ctx.fillRect(0, 0, 1080, 1080);
+  if (config.id === 'cycling-challenge') {
+    if (loadedCyclingBg) {
+      // Draw custom background image loaded from user asset
+      ctx.drawImage(loadedCyclingBg, 0, 0, 1080, 1080);
+    } else {
+      // Deep royal blue background fallback
+      ctx.fillStyle = '#083c91';
+      ctx.fillRect(0, 0, 1080, 1080);
+
+      // Draw darker blue/purple-blue triangles for dynamic speed texture
+      ctx.fillStyle = '#052c6c';
+      
+      // Shard 1 (Top left)
+      ctx.beginPath();
+      ctx.moveTo(0, 0);
+      ctx.lineTo(400, 0);
+      ctx.lineTo(0, 500);
+      ctx.closePath();
+      ctx.fill();
+
+      // Shard 2 (Bottom left)
+      ctx.beginPath();
+      ctx.moveTo(0, 800);
+      ctx.lineTo(350, 1080);
+      ctx.lineTo(0, 1080);
+      ctx.closePath();
+      ctx.fill();
+
+      // Shard 3 (Bottom right)
+      ctx.beginPath();
+      ctx.moveTo(1080, 500);
+      ctx.lineTo(700, 1080);
+      ctx.lineTo(1080, 1080);
+      ctx.closePath();
+      ctx.fill();
+
+      // Speed streak 1
+      ctx.fillStyle = '#1c5cb8';
+      ctx.beginPath();
+      ctx.moveTo(0, 350);
+      ctx.lineTo(200, 500);
+      ctx.lineTo(0, 650);
+      ctx.closePath();
+      ctx.fill();
+
+      // Top-right yellow/lime shards
+      ctx.fillStyle = '#d4fb02';
+      
+      // Strip 1
+      ctx.beginPath();
+      ctx.moveTo(800, -50);
+      ctx.lineTo(950, -50);
+      ctx.lineTo(700, 200);
+      ctx.lineTo(620, 100);
+      ctx.closePath();
+      ctx.fill();
+
+      // Strip 2
+      ctx.beginPath();
+      ctx.moveTo(970, -50);
+      ctx.lineTo(1080, -50);
+      ctx.lineTo(1080, 150);
+      ctx.lineTo(850, 270);
+      ctx.closePath();
+      ctx.fill();
+
+      // Strip 3
+      ctx.beginPath();
+      ctx.moveTo(1080, 100);
+      ctx.lineTo(1080, 250);
+      ctx.lineTo(950, 320);
+      ctx.closePath();
+      ctx.fill();
+    }
+
   } else {
-    const bgGrad = ctx.createLinearGradient(0, 0, 1080, 1080);
-    bgGrad.addColorStop(0, '#2d124d'); // Deep violet
-    bgGrad.addColorStop(0.5, '#7b1fa2'); // Purple
-    bgGrad.addColorStop(1, '#e65100'); // Sunset orange
-    ctx.fillStyle = bgGrad;
-    ctx.fillRect(0, 0, 1080, 1080);
+    // run-walk-challenge
+    if (loadedRunWalkBg) {
+      ctx.drawImage(loadedRunWalkBg, 0, 0, 1080, 1080);
+    } else {
+      // Dark textured blue background
+      ctx.fillStyle = '#08253a';
+      ctx.fillRect(0, 0, 1080, 1080);
+
+      // Draw halftone dots on the left
+      ctx.fillStyle = 'rgba(255, 255, 255, 0.06)';
+      for (let dx = 30; dx < 480; dx += 25) {
+        for (let dy = 30; dy < 1050; dy += 25) {
+          const distRatio = (480 - dx) / 480;
+          const radius = 5 * distRatio * (0.5 + 0.5 * Math.sin((dx + dy) * 0.05));
+          if (radius > 0.5) {
+            ctx.beginPath();
+            ctx.arc(dx, dy, radius, 0, Math.PI * 2);
+            ctx.fill();
+          }
+        }
+      }
+    }
   }
 
   // --------------------------------------------------
-  // 2. DRAW PHOTO (WITH CLIPPING MASK)
+  // 2. DRAW PHOTO (WITH CLIPPING MASK AND ROTATION IF APPLICABLE)
   // --------------------------------------------------
+  const frameCenterX = config.frameX + config.frameWidth / 2;
+  const frameCenterY = config.frameY + config.frameHeight / 2;
+
   ctx.save();
-  // Draw the rounded photo frame path and clip
-  drawRoundedRect(ctx, config.frameX, config.frameY, config.frameWidth, config.frameHeight, config.frameRadius);
-  ctx.clip();
-
-  // Draw background behind photo inside frame
-  ctx.fillStyle = '#d0d7de';
-  ctx.fillRect(config.frameX, config.frameY, config.frameWidth, config.frameHeight);
-
-  if (loadedPhoto) {
-    ctx.save();
-    // 1. Move to the center of the photo frame
-    const centerX = config.frameX + config.frameWidth / 2;
-    const centerY = config.frameY + config.frameHeight / 2;
-    ctx.translate(centerX, centerY);
-
-    // 2. Apply drag offsets (on 1080x1080 scale)
-    ctx.translate(photoX, photoY);
-
-    // 3. Apply rotation
-    ctx.rotate((photoRotation * Math.PI) / 180);
-
-    // 4. Apply scale
-    ctx.scale(photoScale, photoScale);
-
-    // 5. Draw image centered
-    const imgRatio = loadedPhoto.width / loadedPhoto.height;
-    let drawW = config.frameWidth;
-    let drawH = config.frameWidth / imgRatio;
-    
-    // Fit image inside center
-    if (drawH < config.frameHeight) {
-      drawH = config.frameHeight;
-      drawW = config.frameHeight * imgRatio;
-    }
-
-    ctx.drawImage(loadedPhoto, -drawW / 2, -drawH / 2, drawW, drawH);
-    ctx.restore();
-  } else {
-    // Show premium placeholder inside photo frame
-    ctx.fillStyle = '#334155';
-    ctx.fillRect(config.frameX, config.frameY, config.frameWidth, config.frameHeight);
-    
-    // Icon
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'middle';
-    ctx.font = '64px sans-serif';
-    ctx.fillText('👤', config.frameX + config.frameWidth / 2, config.frameY + config.frameHeight / 2 - 40);
-
-    ctx.fillStyle = '#94a3b8';
-    ctx.font = '700 22px "Montserrat", sans-serif';
-    ctx.fillText('PLACEHOLDER PHOTO', config.frameX + config.frameWidth / 2, config.frameY + config.frameHeight / 2 + 30);
-    ctx.font = '500 16px "Montserrat", sans-serif';
-    ctx.fillText('Upload photo to see live preview', config.frameX + config.frameWidth / 2, config.frameY + config.frameHeight / 2 + 65);
+  if (config.frameRotation) {
+    ctx.translate(frameCenterX, frameCenterY);
+    ctx.rotate((config.frameRotation * Math.PI) / 180);
+    ctx.translate(-frameCenterX, -frameCenterY);
   }
 
-  // Draw interactive overlays like target crosshairs/guidelines when dragging
-  if (isInteractive && loadedPhoto) {
-    ctx.strokeStyle = 'rgba(255, 255, 255, 0.4)';
-    ctx.lineWidth = 1.5;
-    ctx.setLineDash([6, 6]);
-    // Grid lines
-    ctx.beginPath();
-    ctx.moveTo(config.frameX + config.frameWidth / 3, config.frameY);
-    ctx.lineTo(config.frameX + config.frameWidth / 3, config.frameY + config.frameHeight);
-    ctx.moveTo(config.frameX + (2 * config.frameWidth) / 3, config.frameY);
-    ctx.lineTo(config.frameX + (2 * config.frameWidth) / 3, config.frameY + config.frameHeight);
-    ctx.moveTo(config.frameX, config.frameY + config.frameHeight / 3);
-    ctx.lineTo(config.frameX + config.frameWidth, config.frameY + config.frameHeight / 3);
-    ctx.moveTo(config.frameX, config.frameY + (2 * config.frameHeight) / 3);
-    ctx.lineTo(config.frameX + config.frameWidth, config.frameY + (2 * config.frameHeight) / 3);
-    ctx.stroke();
-    ctx.setLineDash([]);
-  }
-
-  ctx.restore(); // Restore from photo clip
-
-  // --------------------------------------------------
-  // 3. DRAW TEMPLATE LAYERS & TEXT ON TOP (FOREGROUND)
-  // --------------------------------------------------
-  if (config.id === 'republic-cycling') {
-    // --------------------------------------------------
-    // TEMPLATE 1: REPUBLIC DAY CYCLING CHALLENGE
-    // --------------------------------------------------
-
-    // Redraw the photo inside its elegant white frame
-    ctx.save();
-    ctx.strokeStyle = '#ffffff';
-    ctx.lineWidth = 14;
-    drawRoundedRect(ctx, config.frameX, config.frameY, config.frameWidth, config.frameHeight, config.frameRadius);
-    ctx.stroke();
-    ctx.restore();
-
-    // Indian Tricolor Swoosh on the left/bottom margins
-    ctx.save();
-    ctx.shadowColor = 'rgba(0, 0, 0, 0.2)';
-    ctx.shadowBlur = 15;
-    ctx.shadowOffsetX = -5;
-    
-    // Saffron paint stroke
-    ctx.strokeStyle = '#FF9933';
-    ctx.lineWidth = 100;
-    ctx.lineCap = 'round';
-    ctx.lineJoin = 'round';
-    ctx.beginPath();
-    ctx.moveTo(-50, 200);
-    ctx.bezierCurveTo(150, 250, 200, 650, -50, 920);
-    ctx.stroke();
-
-    // White paint stroke
-    ctx.strokeStyle = '#FFFFFF';
-    ctx.lineWidth = 60;
-    ctx.beginPath();
-    ctx.moveTo(-50, 200);
-    ctx.bezierCurveTo(120, 250, 170, 650, -50, 920);
-    ctx.stroke();
-
-    // Green paint stroke
-    ctx.strokeStyle = '#128807';
-    ctx.lineWidth = 30;
-    ctx.beginPath();
-    ctx.moveTo(-50, 200);
-    ctx.bezierCurveTo(90, 250, 140, 650, -50, 920);
-    ctx.stroke();
-    ctx.restore();
-
-    // QR Code top left
-    drawQRCode(ctx, 40, 40, 100);
-
-    // Brand logo top right
-    drawBrandLogo(ctx, 940, 90, 'republic');
-
-    // Headers & Main Titles
-    ctx.save();
-    ctx.textAlign = 'center';
-    
-    // Main heading: REPUBLIC DAY
-    ctx.fillStyle = '#ffffff';
-    ctx.font = '800 48px "Montserrat", sans-serif';
-    ctx.fillText('REPUBLIC DAY', 510, 72);
-
-    // Subheading: CYCLING CHALLENGE
-    ctx.font = '600 36px "Montserrat", sans-serif';
-    ctx.fillStyle = '#ffffff';
-    ctx.fillText('CYCLING CHALLENGE', 510, 115);
-    ctx.restore();
-
-    // Categories details
-    ctx.save();
-    ctx.textAlign = 'center';
-    ctx.fillStyle = 'rgba(255, 255, 255, 0.9)';
-    ctx.font = 'bold 20px "Montserrat", sans-serif';
-    ctx.fillText('Categories', 270, 210);
-
-    // Badges / list
-    ctx.font = '700 21px "Space Grotesk", sans-serif';
-    ctx.fillStyle = '#f9e79f';
-    ctx.fillText('10 KM | 25 KM | 50 KM | 100 KM', 270, 245);
-    ctx.restore();
-
-    // Blue Chevron/Banner for the Date
-    ctx.save();
-    const ribbonX = 70;
-    const ribbonY = 280;
-    const ribbonW = 400;
-    const ribbonH = 65;
-    
-    // Draw ribbon shadow
-    ctx.shadowColor = 'rgba(0, 0, 0, 0.3)';
-    ctx.shadowBlur = 10;
-    ctx.shadowOffsetY = 5;
-
-    // Draw ribbon shape
-    ctx.fillStyle = '#2980b9';
-    ctx.beginPath();
-    ctx.moveTo(ribbonX, ribbonY);
-    ctx.lineTo(ribbonX + ribbonW, ribbonY);
-    ctx.lineTo(ribbonX + ribbonW - 20, ribbonY + ribbonH / 2);
-    ctx.lineTo(ribbonX + ribbonW, ribbonY + ribbonH);
-    ctx.lineTo(ribbonX, ribbonY + ribbonH);
-    ctx.lineTo(ribbonX + 20, ribbonY + ribbonH / 2);
-    ctx.closePath();
-    ctx.fill();
-    ctx.shadowColor = 'transparent';
-
-    // Highlight border
-    ctx.strokeStyle = '#ffffff';
-    ctx.lineWidth = 1.5;
-    ctx.stroke();
-
-    // Text on ribbon
-    ctx.fillStyle = '#ffffff';
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'middle';
-    ctx.font = '900 21px "Montserrat", sans-serif';
-    ctx.fillText(formattedDate.toUpperCase(), ribbonX + ribbonW / 2, ribbonY + ribbonH / 2);
-    ctx.restore();
-
-    // Draw the bronze Finisher Medal
-    drawMedal(ctx, 270, 560, 'bronze', target, formattedDate);
-
-    // Goal Callout Text under medal
-    ctx.save();
-    ctx.textAlign = 'center';
-    ctx.fillStyle = '#ffffff';
-    ctx.font = '700 18px "Montserrat", sans-serif';
-    ctx.fillText('Complete your target on any 1', 270, 755);
-    ctx.fillText(`day between ${formattedDate}`, 270, 785);
-    ctx.restore();
-
-    // Contact/Info
-    ctx.save();
-    ctx.fillStyle = 'rgba(255, 255, 255, 0.9)';
-    ctx.font = '700 18px "JetBrains Mono", monospace';
-    ctx.textAlign = 'left';
-    ctx.fillText('📞 8076388960', 525, 915);
-    ctx.fillText('🌐 www.pedalspower.com', 525, 945);
-    ctx.restore();
-
-    // Bottom Saffron name footer bar
-    ctx.save();
-    const footerY = 980;
-    ctx.fillStyle = '#FF9933';
-    ctx.fillRect(0, footerY, 1080, 100);
-
-    // Shadow line separating
-    ctx.fillStyle = 'rgba(0, 0, 0, 0.15)';
-    ctx.fillRect(0, footerY, 1080, 6);
-
-    // Participant name text
-    ctx.fillStyle = '#ffffff';
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'middle';
-    ctx.font = '900 46px "Montserrat", sans-serif';
-    ctx.fillText((name || 'YOUR NAME HERE').toUpperCase(), 540, footerY + 50);
-    ctx.restore();
-
-  } else if (config.id === 'midnight-endurance') {
-    // --------------------------------------------------
-    // TEMPLATE 2: MIDNIGHT AERO ENDURANCE
-    // --------------------------------------------------
-
-    // Redraw the photo inside neon-green borders
-    ctx.save();
-    ctx.strokeStyle = '#39ff14';
+  if (config.id === 'run-walk-challenge') {
+    // Draw the neon purple glowing outer line
+    ctx.strokeStyle = '#c084fc';
     ctx.lineWidth = 6;
-    ctx.shadowColor = '#39ff14';
-    ctx.shadowBlur = 15;
+    drawRoundedRect(ctx, config.frameX - 3, config.frameY - 3, config.frameWidth + 6, config.frameHeight + 6, config.frameRadius + 3);
+    ctx.stroke();
+
+    // Draw the Polaroid black border
+    ctx.fillStyle = '#0b0c10';
     drawRoundedRect(ctx, config.frameX, config.frameY, config.frameWidth, config.frameHeight, config.frameRadius);
-    ctx.stroke();
-    // Inner white frame border
-    ctx.strokeStyle = '#ffffff';
-    ctx.lineWidth = 1.5;
-    ctx.shadowBlur = 0;
-    drawRoundedRect(ctx, config.frameX + 3, config.frameY + 3, config.frameWidth - 6, config.frameHeight - 6, config.frameRadius - 3);
-    ctx.stroke();
-    ctx.restore();
-
-    // Geometric neon-glowing cyber vectors
-    ctx.save();
-    ctx.strokeStyle = 'rgba(57, 255, 20, 0.15)';
-    ctx.lineWidth = 1.5;
-    ctx.beginPath();
-    // Grid lines on left panel
-    for (let i = 0; i < 500; i += 50) {
-      ctx.moveTo(i, 0);
-      ctx.lineTo(i, 1080);
-      ctx.moveTo(0, i + 100);
-      ctx.lineTo(500, i + 100);
-    }
-    ctx.stroke();
-    ctx.restore();
-
-    // Speed lines on left
-    ctx.save();
-    ctx.strokeStyle = '#39ff14';
-    ctx.lineWidth = 8;
-    ctx.beginPath();
-    ctx.moveTo(0, 150);
-    ctx.lineTo(150, 150);
-    ctx.moveTo(0, 170);
-    ctx.lineTo(80, 170);
-    ctx.moveTo(0, 190);
-    ctx.lineTo(210, 190);
-    ctx.stroke();
-    ctx.restore();
-
-    // QR Code top left
-    drawQRCode(ctx, 40, 40, 100);
-
-    // Brand logo top right
-    drawBrandLogo(ctx, 940, 90, 'midnight');
-
-    // Headers & Main Titles
-    ctx.save();
-    ctx.textAlign = 'center';
-    
-    // Main heading: MIDNIGHT AERO
-    ctx.fillStyle = '#39ff14';
-    ctx.shadowColor = '#39ff14';
-    ctx.shadowBlur = 10;
-    ctx.font = '900 50px "Space Grotesk", sans-serif';
-    ctx.fillText('MIDNIGHT AERO', 510, 72);
-
-    // Subheading: ENDURANCE SPEED
-    ctx.font = '700 32px "Space Grotesk", sans-serif';
-    ctx.fillStyle = '#ffffff';
-    ctx.shadowBlur = 0;
-    ctx.fillText('ENDURANCE SPEED CHALLENGE', 510, 115);
-    ctx.restore();
-
-    // Categories details
-    ctx.save();
-    ctx.textAlign = 'center';
-    ctx.fillStyle = '#94a3b8';
-    ctx.font = 'bold 18px "Space Grotesk", sans-serif';
-    ctx.fillText('TRACK VARIATION CATEGORIES', 270, 210);
-
-    // Neon badge text
-    ctx.font = '700 20px "JetBrains Mono", monospace';
-    ctx.fillStyle = '#39ff14';
-    ctx.fillText('10KM • 25KM • 50KM • 100KM', 270, 245);
-    ctx.restore();
-
-    // Slate Neumorph-style Date Box
-    ctx.save();
-    const boxX = 70;
-    const boxY = 280;
-    const boxW = 400;
-    const boxH = 65;
-
-    ctx.fillStyle = '#1e293b';
-    ctx.strokeStyle = '#39ff14';
-    ctx.lineWidth = 1.5;
-    drawRoundedRect(ctx, boxX, boxY, boxW, boxH, 12);
     ctx.fill();
-    ctx.stroke();
 
-    // Date Text
-    ctx.fillStyle = '#ffffff';
+    // Define inner photo frame bounds (Polaroid has thin margins on top/left/right, thick on bottom)
+    const px = config.frameX + 24;
+    const py = config.frameY + 24;
+    const pw = config.frameWidth - 48;
+    const ph = config.frameHeight - 48;
+
+    // Clip to the photo frame area
+    ctx.save();
+    drawRoundedRect(ctx, px, py, pw, ph, 8);
+    ctx.clip();
+
+    ctx.fillStyle = '#d0d7de';
+    ctx.fillRect(px, py, pw, ph);
+
+    if (loadedPhoto) {
+      ctx.save();
+      // Move to center of inner photo frame
+      const ipCenterX = px + pw / 2;
+      const ipCenterY = py + ph / 2;
+      ctx.translate(ipCenterX, ipCenterY);
+
+      // Apply offset, rotation, scale
+      ctx.translate(photoX, photoY);
+      ctx.rotate((photoRotation * Math.PI) / 180);
+      ctx.scale(photoScale, photoScale);
+
+      const imgRatio = loadedPhoto.width / loadedPhoto.height;
+      let drawW = pw;
+      let drawH = pw / imgRatio;
+      if (drawH < ph) {
+        drawH = ph;
+        drawW = ph * imgRatio;
+      }
+      ctx.drawImage(loadedPhoto, -drawW / 2, -drawH / 2, drawW, drawH);
+      ctx.restore();
+    } else {
+      // Draw dynamic hills and cloud placeholder
+      drawLandscapePlaceholder(ctx, px, py, pw, ph);
+    }
+
+    if (isInteractive && loadedPhoto) {
+      ctx.strokeStyle = 'rgba(255, 255, 255, 0.4)';
+      ctx.lineWidth = 1.5;
+      ctx.setLineDash([6, 6]);
+      ctx.beginPath();
+      ctx.moveTo(px + pw / 3, py);
+      ctx.lineTo(px + pw / 3, py + ph);
+      ctx.moveTo(px + (2 * pw) / 3, py);
+      ctx.lineTo(px + (2 * pw) / 3, py + ph);
+      ctx.moveTo(px, py + ph / 3);
+      ctx.lineTo(px + pw, py + ph / 3);
+      ctx.moveTo(px, py + (2 * ph) / 3);
+      ctx.lineTo(px + pw, py + (2 * ph) / 3);
+      ctx.stroke();
+      ctx.setLineDash([]);
+    }
+    ctx.restore(); // Restore from photo clip
+
+    // Draw Polaroid Text and Markings (in rotated space!)
+    ctx.fillStyle = '#55555d';
+    ctx.font = '700 12px "JetBrains Mono", monospace';
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
-    ctx.font = '700 20px "Space Grotesk", sans-serif';
-    ctx.fillText(formattedDate.toUpperCase(), boxX + boxW / 2, boxY + boxH / 2);
+
+    // Draw vertical text "CANVA STORIES Z850"
+    ctx.save();
+    ctx.translate(config.frameX + 13, config.frameY + config.frameHeight / 2);
+    ctx.rotate(-Math.PI / 2);
+    ctx.fillText('CANVA STORIES Z850', 0, 0);
     ctx.restore();
 
-    // Draw the silver Finisher Medal
-    drawMedal(ctx, 270, 560, 'silver', target, formattedDate);
+    // Markings "009" and "◀ 600"
+    ctx.font = '800 10px "JetBrains Mono", monospace';
+    ctx.fillText('009', config.frameX + 35, config.frameY + 45);
+    ctx.fillText('◀ 600', config.frameX + 13, config.frameY + 280);
 
-    // Goal Callout Text under medal
+  } else {
+    // cycling-challenge
+    // Draw the rounded photo frame path and clip
+    drawRoundedRect(ctx, config.frameX, config.frameY, config.frameWidth, config.frameHeight, config.frameRadius);
+    ctx.clip();
+
+    ctx.fillStyle = '#d0d7de';
+    ctx.fillRect(config.frameX, config.frameY, config.frameWidth, config.frameHeight);
+
+    if (loadedPhoto) {
+      ctx.save();
+      ctx.translate(frameCenterX, frameCenterY);
+      ctx.translate(photoX, photoY);
+      ctx.rotate((photoRotation * Math.PI) / 180);
+      ctx.scale(photoScale, photoScale);
+
+      const imgRatio = loadedPhoto.width / loadedPhoto.height;
+      let drawW = config.frameWidth;
+      let drawH = config.frameWidth / imgRatio;
+      if (drawH < config.frameHeight) {
+        drawH = config.frameHeight;
+        drawW = config.frameHeight * imgRatio;
+      }
+      ctx.drawImage(loadedPhoto, -drawW / 2, -drawH / 2, drawW, drawH);
+      ctx.restore();
+    } else {
+      // Draw landscape placeholder (sky, hills, cloud)
+      drawLandscapePlaceholder(ctx, config.frameX, config.frameY, config.frameWidth, config.frameHeight);
+    }
+
+    if (isInteractive && loadedPhoto) {
+      ctx.strokeStyle = 'rgba(255, 255, 255, 0.4)';
+      ctx.lineWidth = 1.5;
+      ctx.setLineDash([6, 6]);
+      ctx.beginPath();
+      ctx.moveTo(config.frameX + config.frameWidth / 3, config.frameY);
+      ctx.lineTo(config.frameX + config.frameWidth / 3, config.frameY + config.frameHeight);
+      ctx.moveTo(config.frameX + (2 * config.frameWidth) / 3, config.frameY);
+      ctx.lineTo(config.frameX + (2 * config.frameWidth) / 3, config.frameY + config.frameHeight);
+      ctx.moveTo(config.frameX, config.frameY + config.frameHeight / 3);
+      ctx.lineTo(config.frameX + config.frameWidth, config.frameY + config.frameHeight / 3);
+      ctx.moveTo(config.frameX, config.frameY + (2 * config.frameHeight) / 3);
+      ctx.lineTo(config.frameX + config.frameWidth, config.frameY + (2 * config.frameHeight) / 3);
+      ctx.stroke();
+      ctx.setLineDash([]);
+    }
+  }
+
+  ctx.restore(); // Restore from photo clip and frameRotation
+
+  // --------------------------------------------------
+  // 3. DRAW TEMPLATE FOREGROUND LAYERS & TEXT ON TOP
+  // --------------------------------------------------
+  if (config.id === 'cycling-challenge') {
+    // --------------------------------------------------
+    // TEMPLATE 1: CYCLING DISTANCE CHALLENGE
+    // --------------------------------------------------
+
+    if (!loadedCyclingBg) {
+      // Draw static logo, labels and QR code only if background image is not loaded
+      // Brand logo top left
+      drawBrandLogo(ctx, 130, 110, 'republic');
+
+      // Yellow badge: DISTANCE CHALLENGE
+      ctx.save();
+      ctx.fillStyle = '#d4fb02';
+      drawRoundedRect(ctx, 55, 290, 410, 80, 0); // sharp rectangle matching design
+      ctx.fill();
+
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillStyle = '#083c91';
+      ctx.font = 'italic 900 32px "Montserrat", sans-serif';
+      ctx.fillText('DISTANCE CHALLENGE', 260, 330);
+      ctx.restore();
+
+      // "JOIN NOW" + QR Code
+      ctx.save();
+      ctx.textAlign = 'center';
+      ctx.fillStyle = '#ffffff';
+      ctx.font = '900 16px "Montserrat", sans-serif';
+      ctx.fillText('JOIN NOW', 260, 620);
+      drawQRCode(ctx, 200, 645, 120);
+      ctx.restore();
+
+      // PUSH YOUR LIMITS
+      ctx.save();
+      ctx.textAlign = 'center';
+      ctx.fillStyle = '#ffffff';
+      ctx.font = '900 20px "Montserrat", sans-serif';
+      ctx.fillText('PUSH YOUR LIMITS', 260, 835);
+      ctx.restore();
+
+      // URL with vector Globe Icon
+      ctx.save();
+      ctx.fillStyle = '#ffffff';
+      ctx.font = 'bold 18px "Inter", sans-serif';
+      const textStr = 'www.pedalspower.com';
+      const textWidth = ctx.measureText(textStr).width;
+      const startX = 260 - (textWidth + 24) / 2;
+      drawGlobeIcon(ctx, startX + 9, 880, 9);
+      ctx.textAlign = 'left';
+      ctx.fillText(textStr, startX + 24, 886);
+      ctx.restore();
+    }
+
+    // Always draw dynamic text (since they are blank in the background template)
+    // Title: CYCLING or RUN/WALK (italic bold Montserrat)
     ctx.save();
     ctx.textAlign = 'center';
     ctx.fillStyle = '#ffffff';
-    ctx.font = '700 18px "Space Grotesk", sans-serif';
-    ctx.fillText('LOCK IN YOUR TARGET DISTANCE', 270, 755);
-    ctx.fillStyle = '#94a3b8';
-    ctx.font = '500 15px "JetBrains Mono", monospace';
-    ctx.fillText(`Event logged: ${formattedDate}`, 270, 785);
+    ctx.font = 'italic 900 84px "Montserrat", sans-serif';
+    const isWalkRunning = state.activityRoute === 'walk-runing' || 
+      (typeof window !== 'undefined' && window.location.pathname.includes('/walk-runing'));
+    const titleText = isWalkRunning ? 'WALK/RUN' : 'CYCLING';
+    ctx.fillText(titleText, 260, 340);
     ctx.restore();
 
-    // Contact/Info
+    // Always draw Target Text (e.g. "100KM") in Orbitron futuristic font
     ctx.save();
-    ctx.fillStyle = '#94a3b8';
-    ctx.font = '700 18px "JetBrains Mono", monospace';
-    ctx.textAlign = 'left';
-    ctx.fillText('📞 8076388960', 525, 915);
-    ctx.fillText('🌐 www.pedalspower.com', 525, 945);
-    ctx.restore();
-
-    // Bottom Stealth name footer bar
-    ctx.save();
-    const fY = 980;
-    ctx.fillStyle = '#0f172a';
-    ctx.fillRect(0, fY, 1080, 100);
-
-    // Top neon green strip
-    ctx.fillStyle = '#39ff14';
-    ctx.fillRect(0, fY, 1080, 6);
-
-    // Participant name text
+    ctx.textAlign = 'center';
     ctx.fillStyle = '#ffffff';
+    ctx.font = '900 56px "Montserrat", sans-serif';
+    ctx.fillText(target.replace(/\s+/g, '').toUpperCase(), 260, 580);
+    ctx.restore();
+
+    // Always draw Date Text
+    ctx.save();
+    ctx.textAlign = 'center';
+    ctx.fillStyle = '#ffffff';
+    ctx.font = '800 34px "Montserrat", sans-serif';
+    ctx.fillText(formattedDate.toUpperCase(), 260, 630);
+    ctx.restore();
+
+    // Participant Name drawn in the slanted yellow box of the background image
+    ctx.save();
+    const bannerCenterX = 820;
+    const bannerCenterY = 925;
+    ctx.translate(bannerCenterX, bannerCenterY);
+    // Rotate matching the background slant (frameRotation = 3.8 degrees)
+    ctx.rotate(((config.frameRotation || 3.8) * Math.PI) / 180);
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
-    ctx.font = '900 48px "Space Grotesk", sans-serif';
-    ctx.fillText((name || 'YOUR NAME HERE').toUpperCase(), 540, fY + 53);
+    ctx.fillStyle = '#083c91'; // dark blue
+
+    const nameUpper = name.toUpperCase() || 'YOUR NAME';
+    const maxNameWidth = 530; // bounds of the slanted yellow banner
+
+    // Measure at default 52px font
+    ctx.font = 'italic 950 52px "Montserrat", sans-serif';
+    const singleLineWidth = ctx.measureText(nameUpper).width;
+
+    if (singleLineWidth > maxNameWidth && nameUpper.includes(' ')) {
+      // Split into two lines
+      const words = nameUpper.split(' ');
+      const midPoint = Math.ceil(words.length / 2);
+      const line1 = words.slice(0, midPoint).join(' ');
+      const line2 = words.slice(midPoint).join(' ');
+
+      // Use a smaller font size so two lines fit vertically inside the box
+      ctx.font = 'italic 950 32px "Montserrat", sans-serif';
+      
+      // Draw both lines with vertical offsets
+      ctx.fillText(line1, 0, -18);
+      ctx.fillText(line2, 0, 18);
+    } else {
+      // Single line rendering with dynamic font size scaling if it still overflows
+      let fontSize = 52;
+      ctx.font = `italic 950 ${fontSize}px "Montserrat", sans-serif`;
+      let textWidth = ctx.measureText(nameUpper).width;
+      
+      if (textWidth > maxNameWidth) {
+        fontSize = Math.floor(fontSize * (maxNameWidth / textWidth));
+        fontSize = Math.max(fontSize, 20); // don't scale below 20px
+        ctx.font = `italic 950 ${fontSize}px "Montserrat", sans-serif`;
+      }
+      ctx.fillText(nameUpper, 0, 0);
+    }
     ctx.restore();
 
   } else {
     // --------------------------------------------------
-    // TEMPLATE 3: GOLDEN HORIZON TRAIL
+    // TEMPLATE 2: RUN WALK CHALLENGE
     // --------------------------------------------------
 
-    // Redraw the photo inside metallic golden frame
-    ctx.save();
-    const goldGrad = ctx.createLinearGradient(config.frameX, config.frameY, config.frameX + config.frameWidth, config.frameY + config.frameHeight);
-    goldGrad.addColorStop(0, '#f1c40f');
-    goldGrad.addColorStop(0.5, '#f39c12');
-    goldGrad.addColorStop(1, '#9a7d0a');
-    ctx.strokeStyle = goldGrad;
-    ctx.lineWidth = 12;
-    ctx.shadowColor = 'rgba(241, 196, 15, 0.3)';
-    ctx.shadowBlur = 15;
-    drawRoundedRect(ctx, config.frameX, config.frameY, config.frameWidth, config.frameHeight, config.frameRadius);
-    ctx.stroke();
-    ctx.restore();
+    // Film clapper/strip borders, Brand logo, "challenge" suffix, target milestone, tape banner, PUSH YOUR LIMITS, and URL
+    // are pre-printed/baked in the template image, so we only draw them as fallback if template image is not loaded
+    if (!loadedRunWalkBg) {
+      // Film clapper/strip border at top (cyan with dark shapes)
+      ctx.save();
+      ctx.fillStyle = '#8de3f2';
+      ctx.fillRect(0, 0, 1080, 45);
+      
+      ctx.fillStyle = '#08253a';
+      for (let i = -50; i < 1100; i += 120) {
+        ctx.beginPath();
+        ctx.moveTo(i, 0);
+        ctx.lineTo(i + 60, 0);
+        ctx.lineTo(i + 30, 45);
+        ctx.lineTo(i - 30, 45);
+        ctx.closePath();
+        ctx.fill();
+      }
+      ctx.restore();
 
-    // Mountain path silhouettes drawn on bottom left
-    ctx.save();
-    ctx.fillStyle = 'rgba(45, 18, 77, 0.4)';
-    ctx.beginPath();
-    ctx.moveTo(0, 1080);
-    ctx.lineTo(0, 800);
-    ctx.lineTo(180, 680);
-    ctx.lineTo(340, 750);
-    ctx.lineTo(500, 620);
-    ctx.lineTo(540, 1080);
-    ctx.closePath();
-    ctx.fill();
+      // Film clapper/strip border at bottom (white with dark shapes)
+      ctx.save();
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(0, 1035, 1080, 45);
+      
+      ctx.fillStyle = '#08253a';
+      for (let i = -50; i < 1100; i += 120) {
+        ctx.beginPath();
+        ctx.moveTo(i, 1035);
+        ctx.lineTo(i + 60, 1035);
+        ctx.lineTo(i + 90, 1080);
+        ctx.lineTo(i + 30, 1080);
+        ctx.closePath();
+        ctx.fill();
+      }
+      ctx.restore();
 
-    ctx.fillStyle = 'rgba(45, 18, 77, 0.6)';
-    ctx.beginPath();
-    ctx.moveTo(0, 1080);
-    ctx.lineTo(0, 860);
-    ctx.lineTo(120, 780);
-    ctx.lineTo(260, 840);
-    ctx.lineTo(440, 720);
-    ctx.lineTo(540, 1080);
-    ctx.closePath();
-    ctx.fill();
-    ctx.restore();
+      // Brand logo top left
+      drawBrandLogo(ctx, 260, 125, 'midnight');
 
-    // QR Code top left
-    drawQRCode(ctx, 40, 40, 100);
+      // Static 'challenge' text
+      ctx.save();
+      ctx.textAlign = 'center';
+      ctx.fillStyle = '#ffffff';
+      ctx.font = 'italic bold 96px "Playball", cursive';
+      ctx.fillText('challenge', 260, 385);
+      ctx.restore();
 
-    // Brand logo top right
-    drawBrandLogo(ctx, 940, 90, 'golden');
 
-    // Headers & Main Titles
+
+      // Black Gaffer Tape style Name Banner shape
+      ctx.save();
+      ctx.fillStyle = '#111115';
+      ctx.beginPath();
+      ctx.moveTo(95, 605);
+      ctx.lineTo(425, 600);
+      ctx.lineTo(430, 620);
+      ctx.lineTo(422, 640);
+      ctx.lineTo(428, 660);
+      ctx.lineTo(420, 685);
+      ctx.lineTo(100, 690);
+      ctx.lineTo(96, 670);
+      ctx.lineTo(104, 650);
+      ctx.lineTo(92, 630);
+      ctx.closePath();
+      ctx.fill();
+      ctx.restore();
+
+      // PUSH YOUR LIMITS
+      ctx.save();
+      ctx.textAlign = 'center';
+      ctx.fillStyle = '#ffffff';
+      ctx.font = '900 20px "Montserrat", sans-serif';
+      ctx.fillText('PUSH YOUR LIMITS', 260, 835);
+      ctx.restore();
+
+      // URL with vector Globe Icon
+      ctx.save();
+      ctx.fillStyle = '#ffffff';
+      ctx.font = 'bold 18px "Inter", sans-serif';
+      const textStr = 'www.pedalspower.com';
+      const textWidth = ctx.measureText(textStr).width;
+      const startX = 260 - (textWidth + 24) / 2;
+      drawGlobeIcon(ctx, startX + 9, 880, 9);
+      ctx.textAlign = 'left';
+      ctx.fillText(textStr, startX + 24, 886);
+      ctx.restore();
+    }
+
+    // Always draw dynamic text (since they are blank in the background template)
+    // Title: Run Walk or Cycling (Serif script matching Migra style)
     ctx.save();
     ctx.textAlign = 'center';
+    ctx.fillStyle = '#ffffff';
+    ctx.font = 'italic bold 126px "Migra", "Cormorant Garamond", serif';
+    const isWalkRunning = state.activityRoute === 'walk-runing' || 
+      (typeof window !== 'undefined' && window.location.pathname.includes('/walk-runing'));
+    const titleText = isWalkRunning ? 'Walk/Run' : 'Cycling';
+    ctx.fillText(titleText, 300, 365);
+    ctx.restore();
+
+    // Always draw Target Text (e.g. "50KMS") in Orbitron futuristic font
+    ctx.save();
+    ctx.textAlign = 'center';
+    ctx.fillStyle = '#ffffff';
+    ctx.font = '900 56px "Orbitron", sans-serif';
+    ctx.fillText(target.replace(/\s+/g, '').toUpperCase(), 300, 580);
+    ctx.restore();
+
+    // Always draw Date range blocky text below the target km
+    ctx.save();
+    ctx.textAlign = 'center';
+    ctx.fillStyle = '#ffffff';
+    ctx.font = '900 24px "Orbitron", sans-serif';
+    ctx.fillText(formattedDate.toUpperCase(), 300, 640);
+    ctx.restore();
+
+    // Draw Name text inside tape (pre-printed tape or fallback tape)
+    ctx.save();
+    // Center of the tape: x is around 272, y is around 708 to center inside the pre-printed/fallback tape
+    const tapeCenterX = 322;
+    const tapeCenterY = 748;
+    ctx.translate(tapeCenterX, tapeCenterY);
+    // Rotate counter-clockwise slightly to match the slant of the tape (about -3.5 degrees)
+    ctx.rotate((-3.5 * Math.PI) / 180);
     
-    // Main heading: GOLDEN HORIZON
-    ctx.fillStyle = '#f1c40f';
-    ctx.font = '800 50px "Cinzel", serif';
-    ctx.shadowColor = 'rgba(0, 0, 0, 0.3)';
-    ctx.shadowBlur = 6;
-    ctx.fillText('GOLDEN HORIZON', 510, 72);
-
-    // Subheading: TRAIL RIDE
-    ctx.font = '700 28px "Montserrat", sans-serif';
-    ctx.fillStyle = '#ffffff';
-    ctx.shadowBlur = 0;
-    ctx.fillText('OFF-ROAD ENDURO & TRAIL RIDE', 510, 115);
-    ctx.restore();
-
-    // Categories details
-    ctx.save();
-    ctx.textAlign = 'center';
-    ctx.fillStyle = '#fdebd0';
-    ctx.font = '700 18px "Montserrat", sans-serif';
-    ctx.fillText('TRAIL MILESTONES AVAILABLE', 270, 210);
-
-    ctx.font = 'bold 20px "Space Grotesk", sans-serif';
-    ctx.fillStyle = '#f1c40f';
-    ctx.fillText('10 KM • 25 KM • 50 KM • 100 KM', 270, 245);
-    ctx.restore();
-
-    // Elegant Gold bordered Date Box
-    ctx.save();
-    const boxX = 70;
-    const boxY = 280;
-    const boxW = 400;
-    const boxH = 65;
-
-    ctx.fillStyle = 'rgba(45, 18, 77, 0.7)';
-    ctx.strokeStyle = '#f1c40f';
-    ctx.lineWidth = 1.5;
-    drawRoundedRect(ctx, boxX, boxY, boxW, boxH, 8);
-    ctx.fill();
-    ctx.stroke();
-
-    // Date Text
-    ctx.fillStyle = '#ffffff';
+    const words = name.trim().toUpperCase().split(/\s+/);
+    
+    // Measure text width dynamically to size the black rectangular box
+    let maxTextWidth = 300;
+    if (words.length > 1) {
+      const halfIndex = Math.ceil(words.length / 2);
+      const line1 = words.slice(0, halfIndex).join(' ');
+      const line2 = words.slice(halfIndex).join(' ');
+      
+      ctx.font = '200 64px "Permanent Marker", cursive';
+      const width1 = ctx.measureText(line1).width;
+      const width2 = ctx.measureText(line2).width;
+      maxTextWidth = Math.max(width1, width2);
+    } else {
+      const nameStr = name.trim().toUpperCase() || 'UNIQUE JAIN';
+      let fontSize = 48;
+      ctx.font = `200 ${fontSize}px "Permanent Marker", cursive`;
+      let textWidth = ctx.measureText(nameStr).width;
+      const maxTapeWidth = 300;
+      if (textWidth > maxTapeWidth) {
+        fontSize = Math.max(22, Math.floor(48 * (maxTapeWidth / textWidth)));
+        ctx.font = `200 ${fontSize}px "Permanent Marker", cursive`;
+        textWidth = ctx.measureText(nameStr).width;
+      }
+      maxTextWidth = textWidth;
+    }
+    
+    // Draw black rectangular box around the name with dynamic width
+    ctx.fillStyle = '#111115';
+    const boxWidth = Math.max(340, maxTextWidth + 60);
+    const boxHeight = words.length > 1 ? 140 : 80;
+    ctx.fillRect(-boxWidth / 2, -boxHeight / 2, boxWidth, boxHeight);
+    
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
-    ctx.font = '700 18px "Montserrat", sans-serif';
-    ctx.fillText(formattedDate.toUpperCase(), boxX + boxW / 2, boxY + boxH / 2);
-    ctx.restore();
-
-    // Draw the gold Finisher Medal
-    drawMedal(ctx, 270, 560, 'gold', target, formattedDate);
-
-    // Goal Callout Text under medal
-    ctx.save();
-    ctx.textAlign = 'center';
-    ctx.fillStyle = '#ffffff';
-    ctx.font = '700 16px "Montserrat", sans-serif';
-    ctx.fillText('CONQUER THE SUMMIT & COLLECT GOLD', 270, 755);
-    ctx.fillStyle = '#fdebd0';
-    ctx.font = '500 14px "JetBrains Mono", monospace';
-    ctx.fillText(`Event Period: ${formattedDate}`, 270, 785);
-    ctx.restore();
-
-    // Contact/Info
-    ctx.save();
-    ctx.fillStyle = '#fdebd0';
-    ctx.font = '700 18px "JetBrains Mono", monospace';
-    ctx.textAlign = 'left';
-    ctx.fillText('📞 8076388960', 525, 915);
-    ctx.fillText('🌐 www.pedalspower.com', 525, 945);
-    ctx.restore();
-
-    // Bottom luxury golden name footer bar
-    ctx.save();
-    const footerY3 = 980;
-    ctx.fillStyle = '#4a148c'; // Dark royal purple
-    ctx.fillRect(0, footerY3, 1080, 100);
-
-    // Metallic gold line separating
-    const footerGoldGrad = ctx.createLinearGradient(0, 0, 1080, 0);
-    footerGoldGrad.addColorStop(0, '#f1c40f');
-    footerGoldGrad.addColorStop(0.5, '#fcf3cf');
-    footerGoldGrad.addColorStop(1, '#f39c12');
-    ctx.fillStyle = footerGoldGrad;
-    ctx.fillRect(0, footerY3, 1080, 6);
-
-    // Participant name text
-    ctx.fillStyle = '#f1c40f';
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'middle';
-    ctx.font = 'bold 44px "Cinzel", serif';
-    ctx.fillText((name || 'YOUR NAME HERE').toUpperCase(), 540, footerY3 + 53);
+    ctx.fillStyle = '#8de3f2'; // light cyan matching design
+    
+    ctx.lineWidth = 2;
+    ctx.strokeStyle = '#8de3f2';
+    if (words.length > 1) {
+      // Split into two lines to fit beautifully in the tape height
+      const halfIndex = Math.ceil(words.length / 2);
+      const line1 = words.slice(0, halfIndex).join(' ');
+      const line2 = words.slice(halfIndex).join(' ');
+      
+      ctx.font = '200 64px "Permanent Marker", cursive';
+      ctx.fillText(line1, 0, -26);
+      ctx.strokeText(line1, 0, -26);
+      ctx.fillText(line2, 0, 26);
+      ctx.strokeText(line2, 0, 26);
+    } else {
+      // Single line rendering with dynamic font size if it is a long single word
+      const nameStr = name.trim().toUpperCase() || 'UNIQUE JAIN';
+      let fontSize = 48;
+      ctx.font = `200 ${fontSize}px "Permanent Marker", cursive`;
+      const singleLineWidth = ctx.measureText(nameStr).width;
+      const maxTapeWidth = 300;
+      if (singleLineWidth > maxTapeWidth) {
+        fontSize = Math.max(22, Math.floor(48 * (maxTapeWidth / singleLineWidth)));
+        ctx.font = `200 ${fontSize}px "Permanent Marker", cursive`;
+      }
+      ctx.fillText(nameStr, 0, 0);
+      ctx.strokeText(nameStr, 0, 0);
+    }
     ctx.restore();
   }
 }
