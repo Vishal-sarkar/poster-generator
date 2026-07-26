@@ -111,7 +111,6 @@ export const CertificateForm: React.FC<CertificateFormProps> = ({
                     }`}
                   >
                     <span>{optLabel}</span>
-                    {isSelected && <span className="text-[9px] uppercase font-black tracking-widest text-[#C5A059]">Active</span>}
                   </button>
                 );
               })}
@@ -125,11 +124,7 @@ export const CertificateForm: React.FC<CertificateFormProps> = ({
   return (
     <div className="flex flex-col space-y-4" id="certificate-form-container">
       {/* Demo Preset Buttons - high contrast flat style */}
-      <div className={`bg-[#F8FAFC] p-4 border-2 border-[#E2E8F0] rounded-sm flex-col sm:flex-row sm:items-center justify-between gap-2 ${mobileStep === 2 ? 'hidden md:flex' : 'flex'}`} id="demo-controls">
-        <div>
-          <h4 className="text-[11px] font-bold text-[#1A2B4C] uppercase tracking-wider">Try Demo Presets:</h4>
-          <p className="text-[10px] text-[#64748B]">Instantly populate fields to inspect templates.</p>
-        </div>
+      {/* <div className={`bg-[#F8FAFC] p-4 border-2 border-[#E2E8F0] rounded-sm flex-col sm:flex-row sm:items-center justify-between gap-2 ${mobileStep === 2 ? 'hidden md:flex' : 'flex'}`} id="demo-controls">
         <div className="flex flex-wrap gap-1.5">
           <button
             type="button"
@@ -148,7 +143,7 @@ export const CertificateForm: React.FC<CertificateFormProps> = ({
             Alpine Century (Teal)
           </button>
         </div>
-      </div>
+      </div> */}
 
       {/* Section 1: Template Selection (Carousel) */}
       <div className={`space-y-2 ${mobileStep === 1 ? 'hidden md:block' : 'block'}`} id="template-picker-section">
@@ -322,11 +317,9 @@ export const CertificateForm: React.FC<CertificateFormProps> = ({
       </div>
 
       {/* Section 3: Ride Details & Custom Date (Optional) */}
-      <div className={`bg-white p-4 border-2 border-[#E2E8F0] rounded-sm space-y-3.5 ${mobileStep === 2 ? 'hidden md:block' : 'block'}`} id="form-optional-inputs">
+      {/* <div className={`bg-white p-4 border-2 border-[#E2E8F0] rounded-sm space-y-3.5 ${mobileStep === 2 ? 'hidden md:block' : 'block'}`} id="form-optional-inputs">
         <h4 className="text-[11px] font-black text-[#1A2B4C] uppercase tracking-wider border-b pb-1.5 border-[#E2E8F0]">Ride Details (Optional)</h4>
-        
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
-          {/* Ride / Event Name */}
           <div>
             <label htmlFor="input-ride-name" className="block text-[11px] font-bold uppercase tracking-wider text-[#64748B] mb-1.5 flex items-center gap-1">
               <Award className="w-3 h-3 text-[#64748B]" /> Ride / Event Name
@@ -340,8 +333,6 @@ export const CertificateForm: React.FC<CertificateFormProps> = ({
               className="w-full h-11 px-4 text-sm font-semibold bg-white border-2 border-[#E2E8F0] rounded-sm focus:outline-none focus:border-[#1A2B4C] transition-colors"
             />
           </div>
-
-          {/* Date */}
           <div>
             <label htmlFor="input-ride-date" className="block text-[11px] font-bold uppercase tracking-wider text-[#64748B] mb-1.5 flex items-center gap-1">
               <Calendar className="w-3 h-3 text-[#64748B]" /> Completion Date
@@ -356,17 +347,15 @@ export const CertificateForm: React.FC<CertificateFormProps> = ({
             />
           </div>
         </div>
-      </div>
+      </div> */}
 
       {/* Section 4: Signature Design (Dynamic Customization) */}
-      <div className={`bg-white p-4 border-2 border-[#E2E8F0] rounded-sm space-y-3.5 ${mobileStep === 1 ? 'hidden md:block' : 'block'}`} id="form-signature-inputs">
+      {/* <div className={`bg-white p-4 border-2 border-[#E2E8F0] rounded-sm space-y-3.5 ${mobileStep === 1 ? 'hidden md:block' : 'block'}`} id="form-signature-inputs">
         <h4 className="text-[11px] font-black text-[#1A2B4C] uppercase tracking-wider border-b pb-1.5 border-[#E2E8F0] flex items-center gap-1">
           <Edit3 className="w-3.5 h-3.5 text-[#1A2B4C]" />
           Signature Settings
         </h4>
-        
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-3.5">
-          {/* Handwritten Text */}
           <div>
             <label htmlFor="input-sig-text" className="block text-[11px] font-bold uppercase tracking-wider text-[#64748B] mb-1.5">
               Signature Script
@@ -380,8 +369,6 @@ export const CertificateForm: React.FC<CertificateFormProps> = ({
               className="w-full h-11 px-4 text-sm font-semibold bg-white border-2 border-[#E2E8F0] rounded-sm focus:outline-none focus:border-[#1A2B4C] transition-colors"
             />
           </div>
-
-          {/* Print Name */}
           <div>
             <label htmlFor="input-sig-name" className="block text-[11px] font-bold uppercase tracking-wider text-[#64748B] mb-1.5">
               Printed Name
@@ -395,8 +382,6 @@ export const CertificateForm: React.FC<CertificateFormProps> = ({
               className="w-full h-11 px-4 text-sm font-semibold bg-white border-2 border-[#E2E8F0] rounded-sm focus:outline-none focus:border-[#1A2B4C] transition-colors"
             />
           </div>
-
-          {/* Role / Title */}
           <div>
             <label htmlFor="input-sig-role" className="block text-[11px] font-bold uppercase tracking-wider text-[#64748B] mb-1.5">
               Title / Role
@@ -411,16 +396,16 @@ export const CertificateForm: React.FC<CertificateFormProps> = ({
             />
           </div>
         </div>
-      </div>
+      </div> */}
 
       {/* Static desktop-only help note */}
-      <div className="hidden md:flex items-start gap-2.5 p-4 bg-[#F8FAFC] border-2 border-[#E2E8F0] text-[#64748B] rounded-sm text-xs" id="desktop-note">
+      {/* <div className="hidden md:flex items-start gap-2.5 p-4 bg-[#F8FAFC] border-2 border-[#E2E8F0] text-[#64748B] rounded-sm text-xs" id="desktop-note">
         <BadgeCheck className="w-4 h-4 text-[#1A2B4C] flex-shrink-0 mt-0.5" />
         <div>
           <p className="font-bold text-[#1A2B4C] uppercase tracking-wider text-[11px]">Sleek Design Engine Active</p>
           <p className="text-[11px] text-[#64748B] mt-0.5 leading-relaxed">Required fields must be valid to unlock. See the dynamic high-contrast preview updating in real time.</p>
         </div>
-      </div>
+      </div> */}
     </div>
   );
 };

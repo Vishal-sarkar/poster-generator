@@ -402,7 +402,8 @@ export function renderPoster(
   loadedPhoto: HTMLImageElement | null,
   loadedCyclingBg: HTMLImageElement | null,
   loadedRunWalkBg: HTMLImageElement | null,
-  isInteractive: boolean = false
+  isInteractive: boolean = false,
+  loadedHalftone: HTMLImageElement | null = null
 ) {
   const ctx = canvas.getContext('2d');
   if (!ctx) return;
@@ -699,6 +700,19 @@ export function renderPoster(
 
   ctx.restore(); // Restore from photo clip and frameRotation
 
+  // Draw halftone circle on top of the Polaroid photo frame
+  if (config.id === 'run-walk-challenge' && loadedHalftone) {
+    ctx.save();
+    const size = 680;
+    const centerX = 1120;
+    const centerY = 1100;
+    ctx.translate(centerX, centerY);
+    // Rotate clockwise slightly (20 degrees)
+    ctx.rotate((180 * Math.PI) / 180);
+    ctx.drawImage(loadedHalftone, -size / 2, -size / 2, size, size);
+    ctx.restore();
+  }
+
   // --------------------------------------------------
   // 3. DRAW TEMPLATE FOREGROUND LAYERS & TEXT ON TOP
   // --------------------------------------------------
@@ -764,7 +778,7 @@ export function renderPoster(
     const isWalkRunning = state.activityRoute === 'walk-runing' || 
       (typeof window !== 'undefined' && window.location.pathname.includes('/walk-runing'));
     const titleText = isWalkRunning ? 'WALK/RUN' : 'CYCLING';
-    ctx.fillText(titleText, 260, 340);
+    ctx.fillText(titleText, 280, 340);
     ctx.restore();
 
     // Always draw Target Text (e.g. "100KM") in Orbitron futuristic font
@@ -928,7 +942,7 @@ export function renderPoster(
     ctx.save();
     ctx.textAlign = 'center';
     ctx.fillStyle = '#ffffff';
-    ctx.font = 'italic bold 126px "Migra", "Cormorant Garamond", serif';
+    ctx.font = 'italic bold 126px "Migra",  serif';
     const isWalkRunning = state.activityRoute === 'walk-runing' || 
       (typeof window !== 'undefined' && window.location.pathname.includes('/walk-runing'));
     const titleText = isWalkRunning ? 'Walk/Run' : 'Cycling';
@@ -969,19 +983,19 @@ export function renderPoster(
       const line1 = words.slice(0, halfIndex).join(' ');
       const line2 = words.slice(halfIndex).join(' ');
       
-      ctx.font = '200 64px "Permanent Marker", cursive';
+      ctx.font = 'bold 64px "Permanent Marker", cursive';
       const width1 = ctx.measureText(line1).width;
       const width2 = ctx.measureText(line2).width;
       maxTextWidth = Math.max(width1, width2);
     } else {
       const nameStr = name.trim().toUpperCase() || 'UNIQUE JAIN';
       let fontSize = 48;
-      ctx.font = `200 ${fontSize}px "Permanent Marker", cursive`;
+      ctx.font = `bold ${fontSize}px "Permanent Marker", cursive`;
       let textWidth = ctx.measureText(nameStr).width;
       const maxTapeWidth = 300;
       if (textWidth > maxTapeWidth) {
         fontSize = Math.max(22, Math.floor(48 * (maxTapeWidth / textWidth)));
-        ctx.font = `200 ${fontSize}px "Permanent Marker", cursive`;
+        ctx.font = `bold ${fontSize}px "Permanent Marker", cursive`;
         textWidth = ctx.measureText(nameStr).width;
       }
       maxTextWidth = textWidth;
@@ -997,7 +1011,7 @@ export function renderPoster(
     ctx.textBaseline = 'middle';
     ctx.fillStyle = '#8de3f2'; // light cyan matching design
     
-    ctx.lineWidth = 2;
+    ctx.lineWidth = 3;
     ctx.strokeStyle = '#8de3f2';
     if (words.length > 1) {
       // Split into two lines to fit beautifully in the tape height
@@ -1005,7 +1019,7 @@ export function renderPoster(
       const line1 = words.slice(0, halfIndex).join(' ');
       const line2 = words.slice(halfIndex).join(' ');
       
-      ctx.font = '200 64px "Permanent Marker", cursive';
+      ctx.font = '500 64px "Permanent Marker", cursive';
       ctx.fillText(line1, 0, -26);
       ctx.strokeText(line1, 0, -26);
       ctx.fillText(line2, 0, 26);
@@ -1014,12 +1028,12 @@ export function renderPoster(
       // Single line rendering with dynamic font size if it is a long single word
       const nameStr = name.trim().toUpperCase() || 'UNIQUE JAIN';
       let fontSize = 48;
-      ctx.font = `200 ${fontSize}px "Permanent Marker", cursive`;
+      ctx.font = `500 ${fontSize}px "Permanent Marker", cursive`;
       const singleLineWidth = ctx.measureText(nameStr).width;
       const maxTapeWidth = 300;
       if (singleLineWidth > maxTapeWidth) {
         fontSize = Math.max(22, Math.floor(48 * (maxTapeWidth / singleLineWidth)));
-        ctx.font = `200 ${fontSize}px "Permanent Marker", cursive`;
+        ctx.font = `500 ${fontSize}px "Permanent Marker", cursive`;
       }
       ctx.fillText(nameStr, 0, 0);
       ctx.strokeText(nameStr, 0, 0);

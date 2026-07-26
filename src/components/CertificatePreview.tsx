@@ -6,6 +6,8 @@
 import React, { useRef, useState, useEffect } from 'react';
 import { CertificateData, TEMPLATES } from '../types';
 import { TemplateBackground, TemplateBadge } from './TemplateDesigns';
+// @ts-ignore
+import certNavyGoldBg from '../../assets/cert_navy_gold_bg.png';
 
 interface CertificatePreviewProps {
   data: CertificateData;
@@ -104,6 +106,89 @@ export const CertificatePreview: React.FC<CertificatePreviewProps> = ({ data, is
     boxSizing: 'border-box',
     fontFamily: 'Inter, sans-serif',
   };
+
+  if (data.selectedTemplateId === 'navy-gold') {
+    return (
+      <div ref={containerRef} className="w-full flex items-start justify-start select-none" id="cert-preview-wrapper">
+        <div style={wrapperStyle} className="transition-all duration-200">
+          <div style={innerStyle} className="bg-white relative shadow-none" id="certificate-print-area">
+            {/* Background Image */}
+            <div className="absolute inset-0 w-full h-full" style={{ zIndex: 0 }}>
+              <img src={certNavyGoldBg} alt="Certificate Background" className="w-full h-full object-cover" />
+            </div>
+
+            {/* Recipient Name with dynamic font size */}
+            <div 
+              className="absolute left-1/2 -translate-x-1/2 text-center" 
+              style={{ 
+                top: '425px', 
+                width: '1000px', 
+                zIndex: 10 
+              }}
+            >
+              <h2 
+                className="font-bold tracking-normal leading-tight font-serif-cert"
+                style={{
+                  ...getNameStyle(data.name || 'YOUR NAME HERE'),
+                  fontFamily: '"Cinzel", serif',
+                  fontWeight: 700,
+                  color: '#0A2540'
+                }}
+              >
+                {(data.name || '').trim() || 'YOUR NAME HERE'}
+              </h2>
+            </div>
+
+            {/* Event Description (covers and replaces "held on 1" text on background) */}
+            <div 
+              className="absolute left-1/2 -translate-x-1/2 text-center flex items-center justify-center bg-white font-sans" 
+              style={{ 
+                top: '522px', 
+                width: '950px', 
+                height: '35px', 
+                zIndex: 10,
+                color: '#0A2540',
+                fontSize: '18px',
+                fontWeight: 500
+              }}
+            >
+              For successfully completing {(data.rideName || 'World Bicycle Day Virtual Challenge 2026').trim()} held on {(data.rideDate || '13th July 2026').trim()}
+            </div>
+
+            {/* Duration Stat (placed above the line) */}
+            <div 
+              className="absolute text-center" 
+              style={{ 
+                left: '266px', 
+                top: '635px', 
+                width: '260px', 
+                zIndex: 10 
+              }}
+            >
+              <span className="text-[32px] font-bold tracking-wider font-sans" style={{ color: '#0A2540' }}>
+                {data.duration || '00:00:00'}
+              </span>
+            </div>
+
+            {/* Distance Stat (placed above the line) */}
+            <div 
+              className="absolute text-center" 
+              style={{ 
+                left: '886px', 
+                top: '635px', 
+                width: '260px', 
+                zIndex: 10 
+              }}
+            >
+              <span className="text-[32px] font-bold tracking-wider font-sans" style={{ color: '#0A2540' }}>
+                {data.distance ? `${data.distance} ${data.distanceUnit}` : `0.00 ${data.distanceUnit}`}
+              </span>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div ref={containerRef} className="w-full flex items-start justify-start select-none" id="cert-preview-wrapper">

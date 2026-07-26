@@ -34,6 +34,8 @@ import {
 import cyclingBg from '../assets/cycling_bg.png';
 // @ts-ignore
 import runWalkBg from '../assets/run_walk_bg.jpg';
+// @ts-ignore
+import halftoneCircle from '../assets/halftone_circle.png';
 import CertificateApp from './CertificateApp';
 
 interface DropdownProps {
@@ -305,6 +307,7 @@ function PosterGenerator() {
   // Pre-load the custom cycling background template image
   const [loadedCyclingBg, setLoadedCyclingBg] = useState<HTMLImageElement | null>(null);
   const [loadedRunWalkBg, setLoadedRunWalkBg] = useState<HTMLImageElement | null>(null);
+  const [loadedHalftone, setLoadedHalftone] = useState<HTMLImageElement | null>(null);
 
   useEffect(() => {
     const img = new Image();
@@ -317,6 +320,12 @@ function PosterGenerator() {
     img2.src = runWalkBg;
     img2.onload = () => {
       setLoadedRunWalkBg(img2);
+    };
+
+    const img3 = new Image();
+    img3.src = halftoneCircle;
+    img3.onload = () => {
+      setLoadedHalftone(img3);
     };
   }, []);
 
@@ -421,12 +430,12 @@ function PosterGenerator() {
   // Redraw both canvases instantly when state, loadedPhoto, dragging state, or step/view state changes
   useEffect(() => {
     if (desktopCanvasRef.current) {
-      renderPoster(desktopCanvasRef.current, state, loadedPhoto, loadedCyclingBg, loadedRunWalkBg, isDragging);
+      renderPoster(desktopCanvasRef.current, state, loadedPhoto, loadedCyclingBg, loadedRunWalkBg, isDragging, loadedHalftone);
     }
     if (mobileCanvasRef.current) {
-      renderPoster(mobileCanvasRef.current, state, loadedPhoto, loadedCyclingBg, loadedRunWalkBg, isDragging);
+      renderPoster(mobileCanvasRef.current, state, loadedPhoto, loadedCyclingBg, loadedRunWalkBg, isDragging, loadedHalftone);
     }
-  }, [state, loadedPhoto, loadedCyclingBg, loadedRunWalkBg, isDragging, mobileStep, isGenerated]);
+  }, [state, loadedPhoto, loadedCyclingBg, loadedRunWalkBg, isDragging, mobileStep, isGenerated, loadedHalftone]);
 
   // Hook scroll wheel zooming directly onto canvases to prevent page-level scrolling
   useEffect(() => {
@@ -1373,7 +1382,7 @@ function PosterGenerator() {
               <button
                 type="button"
                 onClick={handleDownload}
-                className="py-4 w-full uber-btn-primary text-xs flex items-center justify-center space-x-2"
+                className="py-4 w-full uber-btn-primary text-xs flex items-center justify-center space-x-2 rounded-full"
               >
                 <Download className="w-4 h-4 text-white" />
                 <span>SAVE TO GALLERY (DOWNLOAD)</span>
@@ -1382,7 +1391,7 @@ function PosterGenerator() {
               <button
                 type="button"
                 onClick={handleShare}
-                className="py-4 w-full uber-btn-outline text-xs flex items-center justify-center space-x-2"
+                className="py-4 w-full uber-btn-outline text-xs flex items-center justify-center space-x-2 rounded-full"
               >
                 <Share2 className="w-4 h-4 text-black" />
                 <span>SHARE POSTER</span>
@@ -1402,7 +1411,7 @@ function PosterGenerator() {
               <button
                 type="button"
                 onClick={() => setMobileStep(1)}
-                className="w-full max-w-sm py-4 px-6 uber-btn-secondary text-sm"
+                className="w-full max-w-sm py-4 px-6 uber-btn-secondary text-sm rounded-full"
               >
                 ← START OVER WITH NEW INFO
               </button>

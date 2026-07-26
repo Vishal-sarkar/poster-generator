@@ -541,11 +541,10 @@ export default function CertificateApp() {
       <header className="bg-white border-b-2 border-[#E2E8F0] sticky top-0 z-40 px-6 py-4 flex items-center justify-between" id="header-bar">
         <div className="flex items-center gap-3">
           <div className="w-8 h-8 bg-[#1A2B4C] flex items-center justify-center font-black text-white text-lg rounded-sm">
-            A
+            P
           </div>
           <div>
-            <h1 className="text-lg font-black uppercase tracking-tight text-[#1A2B4C]">Achieve.ly</h1>
-            <p className="text-[9px] text-[#64748B] font-mono tracking-wider">PREMIUM FLAT DESIGN ENGINE</p>
+            <h1 className="text-lg font-black uppercase tracking-tight text-[#1A2B4C]">Pedals Power</h1>
           </div>
         </div>
 
@@ -563,9 +562,9 @@ export default function CertificateApp() {
             </button>
           )}
           
-          <span className="text-xs px-2.5 py-1 rounded-sm bg-[#F8FAFC] text-[#64748B] font-mono font-bold uppercase border border-[#E2E8F0]">
+          {/* <span className="text-xs px-2.5 py-1 rounded-sm bg-[#F8FAFC] text-[#64748B] font-mono font-bold uppercase border border-[#E2E8F0]">
             v1.1
-          </span>
+          </span> */}
         </div>
       </header>
 
@@ -663,14 +662,14 @@ export default function CertificateApp() {
 
                 {/* Preview wrapper scales with parent */}
                 <div className="w-full flex-1 flex items-center justify-center p-1" id="rendered-canvas-container">
-                  <CertificatePreview data={data} isGenerating={isGenerating} />
+                   <CertificatePreview data={data} isGenerating={false} />
                 </div>
 
-                <div className="bg-white p-3 border border-[#E2E8F0] rounded-sm flex items-center justify-between gap-2" id="canvas-footer-tip">
+                {/* <div className="bg-white p-3 border border-[#E2E8F0] rounded-sm flex items-center justify-between gap-2" id="canvas-footer-tip">
                   <p className="text-[10px] text-[#64748B] leading-normal uppercase tracking-wider">
                     Designed to output print-ready <strong>1414 x 970</strong> resolution vectors. Font adjusts dynamically on long names to prevent text wrapping.
                   </p>
-                </div>
+                </div> */}
               </div>
 
               {/* Mobile Sticky Bottom Bar (as per mobile spec guidelines) */}
