@@ -5,6 +5,7 @@
 
 import React from 'react';
 import { CertificateData, TEMPLATES, TemplateConfig } from '../types';
+import { getTemplateForEvent } from '../events';
 import { Award, Timer, Navigation, Calendar, Edit3, ShieldAlert, BadgeCheck, ChevronDown } from 'lucide-react';
 
 interface CertificateFormProps {
@@ -145,65 +146,76 @@ export const CertificateForm: React.FC<CertificateFormProps> = ({
         </div>
       </div> */}
 
-      {/* Section 1: Template Selection (Carousel) */}
-      <div className={`space-y-2 ${mobileStep === 1 ? 'hidden md:block' : 'block'}`} id="template-picker-section">
-        <label className="block text-[11px] font-bold uppercase tracking-wider text-[#64748B] flex items-center gap-1">
-          <Award className="w-3.5 h-3.5 text-[#64748B]" />
-          Select Certificate Template
-        </label>
-        
-        {/* Horizontal scrollable row of custom miniatures */}
-        <div className="flex gap-3 overflow-x-auto pb-2 scroll-smooth" id="template-carousel">
-          {TEMPLATES.map((tpl) => {
-            const isSelected = data.selectedTemplateId === tpl.id;
-            return (
-              <button
-                key={tpl.id}
-                type="button"
-                id={`template-btn-${tpl.id}`}
-                onClick={() => onChange('selectedTemplateId', tpl.id)}
-                className={`flex-shrink-0 w-32 p-2.5 border-2 rounded-sm text-left transition-all cursor-pointer flex flex-col justify-between h-24 ${
-                  isSelected
-                    ? 'border-[#1A2B4C] bg-[#1A2B4C]/5 ring-2 ring-[#1A2B4C]/10'
-                    : 'border-[#E2E8F0] bg-white hover:border-[#64748B]'
-                }`}
-              >
-                {/* Miniature preview of template layout */}
-                <div className="w-full h-8 rounded-sm relative overflow-hidden border border-[#E2E8F0]" style={{ backgroundColor: tpl.bgColor }}>
-                  {/* Miniature Top left decorative cut */}
-                  {tpl.id === 'navy-gold' && (
-                    <>
-                      <div className="absolute top-0 left-0 w-8 h-4 bg-[#0A2540] clip-path-polygon" />
-                      <div className="absolute bottom-0 right-0 w-8 h-4 bg-[#0A2540]" />
-                    </>
-                  )}
-                  {tpl.id === 'cyber-teal' && (
-                    <div className="absolute inset-0 border border-[#38BDF8] border-dashed opacity-50" />
-                  )}
-                  {tpl.id === 'vintage-burgundy' && (
-                    <div className="absolute inset-0.5 border border-[#581C23]" />
-                  )}
-                  {tpl.id === 'modernist-yellow' && (
-                    <div className="absolute top-0 left-0 w-3 h-3 bg-[#EAB308]" />
-                  )}
-                  {/* Miniature text placeholder */}
-                  <div className="absolute inset-0 flex items-center justify-center">
-                    <span className="text-[5px] font-bold tracking-wider uppercase opacity-45">CERT</span>
-                  </div>
-                </div>
+      {/* Section 1: Template Selection (Carousel) - Hidden if event template is loaded via URL */}
+      {(() => {
+        const path = typeof window !== 'undefined' ? window.location.pathname : '';
+        const pathSegments = path.split('/').filter(Boolean);
+        const eventName = pathSegments.length > 1 ? pathSegments[1] : '';
+        const hasEventTemplate = eventName && getTemplateForEvent(eventName) !== null;
 
-                <div className="mt-1">
-                  <p className="text-[10px] font-bold text-[#1A2B4C] line-clamp-1 leading-tight">{tpl.name}</p>
-                  <div className="flex gap-1 mt-1">
-                    <span className="w-2.5 h-2.5 rounded-full inline-block border border-[#E2E8F0]" style={{ backgroundColor: tpl.primaryColor }} />
-                    <span className="w-2.5 h-2.5 rounded-full inline-block border border-[#E2E8F0]" style={{ backgroundColor: tpl.accentColor }} />
-                  </div>
-                </div>
-              </button>
-            );
-          })}
-        </div>
-      </div>
+        if (hasEventTemplate) return null;
+
+        return (
+          <div className={`space-y-2 ${mobileStep === 1 ? 'hidden md:block' : 'block'}`} id="template-picker-section">
+            <label className="block text-[11px] font-bold uppercase tracking-wider text-[#64748B] flex items-center gap-1">
+              <Award className="w-3.5 h-3.5 text-[#64748B]" />
+              Select Certificate Template
+            </label>
+            
+            {/* Horizontal scrollable row of custom miniatures */}
+            <div className="flex gap-3 overflow-x-auto pb-2 scroll-smooth" id="template-carousel">
+              {TEMPLATES.map((tpl) => {
+                const isSelected = data.selectedTemplateId === tpl.id;
+                return (
+                  <button
+                    key={tpl.id}
+                    type="button"
+                    id={`template-btn-${tpl.id}`}
+                    onClick={() => onChange('selectedTemplateId', tpl.id)}
+                    className={`flex-shrink-0 w-32 p-2.5 border-2 rounded-sm text-left transition-all cursor-pointer flex flex-col justify-between h-24 ${
+                      isSelected
+                        ? 'border-[#1A2B4C] bg-[#1A2B4C]/5 ring-2 ring-[#1A2B4C]/10'
+                        : 'border-[#E2E8F0] bg-white hover:border-[#64748B]'
+                    }`}
+                  >
+                    {/* Miniature preview of template layout */}
+                    <div className="w-full h-8 rounded-sm relative overflow-hidden border border-[#E2E8F0]" style={{ backgroundColor: tpl.bgColor }}>
+                      {/* Miniature Top left decorative cut */}
+                      {tpl.id === 'navy-gold' && (
+                        <>
+                          <div className="absolute top-0 left-0 w-8 h-4 bg-[#0A2540] clip-path-polygon" />
+                          <div className="absolute bottom-0 right-0 w-8 h-4 bg-[#0A2540]" />
+                        </>
+                      )}
+                      {tpl.id === 'cyber-teal' && (
+                        <div className="absolute inset-0 border border-[#38BDF8] border-dashed opacity-50" />
+                      )}
+                      {tpl.id === 'vintage-burgundy' && (
+                        <div className="absolute inset-0.5 border border-[#581C23]" />
+                      )}
+                      {tpl.id === 'modernist-yellow' && (
+                        <div className="absolute top-0 left-0 w-3 h-3 bg-[#EAB308]" />
+                      )}
+                      {/* Miniature text placeholder */}
+                      <div className="absolute inset-0 flex items-center justify-center">
+                        <span className="text-[5px] font-bold tracking-wider uppercase opacity-45">CERT</span>
+                      </div>
+                    </div>
+
+                    <div className="mt-1">
+                      <p className="text-[10px] font-bold text-[#1A2B4C] line-clamp-1 leading-tight">{tpl.name}</p>
+                      <div className="flex gap-1 mt-1">
+                        <span className="w-2.5 h-2.5 rounded-full inline-block border border-[#E2E8F0]" style={{ backgroundColor: tpl.primaryColor }} />
+                        <span className="w-2.5 h-2.5 rounded-full inline-block border border-[#E2E8F0]" style={{ backgroundColor: tpl.accentColor }} />
+                      </div>
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        );
+      })()}
 
       {/* Section 2: Core Inputs */}
       <div className={`grid grid-cols-1 gap-4 bg-white p-4 border-2 border-[#E2E8F0] rounded-sm ${mobileStep === 2 ? 'hidden md:grid' : 'grid'}`} id="form-core-inputs">
@@ -234,77 +246,71 @@ export const CertificateForm: React.FC<CertificateFormProps> = ({
           )}
         </div>
 
-        {/* Duration & Distance Row */}
-        <div className="grid grid-cols-2 gap-3">
-          {/* Duration */}
-          <div>
-            <label htmlFor="input-duration" className="block text-[11px] font-bold uppercase tracking-wider text-[#64748B] mb-1.5 flex items-center gap-1">
-              <Timer className="w-3 h-3 text-[#64748B]" /> Duration *
-            </label>
-            <div className="flex items-center gap-1" id="duration-picker-grid">
-              {/* Hours */}
-              {renderTimePickerDropdown(hours, 'h', 100)}
+        {/* Duration */}
+        <div>
+          <label htmlFor="input-duration" className="block text-[11px] font-bold uppercase tracking-wider text-[#64748B] mb-1.5 flex items-center gap-1">
+            <Timer className="w-3 h-3 text-[#64748B]" /> Duration *
+          </label>
+          <div className="flex items-center gap-1" id="duration-picker-grid">
+            {/* Hours */}
+            {renderTimePickerDropdown(hours, 'h', 100)}
 
-              <span className="text-[#1A2B4C] font-black text-xs sm:text-sm">:</span>
+            <span className="text-[#1A2B4C] font-black text-xs sm:text-sm">:</span>
 
-              {/* Minutes */}
-              {renderTimePickerDropdown(minutes, 'm', 60)}
+            {/* Minutes */}
+            {renderTimePickerDropdown(minutes, 'm', 60)}
 
-              <span className="text-[#1A2B4C] font-black text-xs sm:text-sm">:</span>
+            <span className="text-[#1A2B4C] font-black text-xs sm:text-sm">:</span>
 
-              {/* Seconds */}
-              {renderTimePickerDropdown(seconds, 's', 60)}
-            </div>
-            {errors.duration ? (
-              <p className="text-[10px] text-red-500 mt-1 leading-tight flex items-center gap-1 font-semibold uppercase tracking-wider">
-                <ShieldAlert className="w-3 h-3 flex-shrink-0" /> {errors.duration}
-              </p>
-            ) : (
-              <div className="flex justify-between text-[9px] text-[#94A3B8] mt-1 uppercase tracking-wider font-mono">
-                <span>Hours</span>
-                <span>Mins</span>
-                <span>Secs</span>
-              </div>
-            )}
+            {/* Seconds */}
+            {renderTimePickerDropdown(seconds, 's', 60)}
           </div>
-
-          {/* Distance */}
-          <div>
-            <label htmlFor="input-distance" className="block text-[11px] font-bold uppercase tracking-wider text-[#64748B] mb-1.5 flex items-center gap-1">
-              <Navigation className="w-3 h-3 text-[#64748B]" /> Distance *
-            </label>
-            <div className="flex">
-              <input
-                type="text"
-                id="input-distance"
-                value={data.distance}
-                onChange={(e) => {
-                  let val = e.target.value;
-                  // Allow only digits and up to one decimal point
-                  val = val.replace(/[^0-9.]/g, '');
-                  // Prevent multiple decimals
-                  const parts = val.split('.');
-                  if (parts.length > 2) {
-                    val = parts[0] + '.' + parts.slice(1).join('');
-                  }
-                  onChange('distance', val);
-                }}
-                placeholder="45.00"
-                className={`flex-1 min-w-0 h-11 px-4 text-sm font-semibold bg-white border-l-2 border-y-2 rounded-l-sm focus:outline-none transition-colors ${
-                  errors.distance ? 'border-red-500 focus:border-red-600' : 'border-[#E2E8F0] focus:border-[#1A2B4C]'
-                }`}
-              />
-              <select
-                id="select-unit"
-                value={data.distanceUnit}
-                onChange={(e) => onChange('distanceUnit', e.target.value)}
-                className="px-3 h-11 text-xs font-black uppercase bg-[#F8FAFC] border-2 border-[#E2E8F0] rounded-r-sm focus:outline-none border-l-0 text-[#1A2B4C]"
-              >
-                <option value="KM">KM</option>
-                <option value="Miles">Miles</option>
-                <option value="M">Meters</option>
-              </select>
+          {errors.duration ? (
+            <p className="text-[10px] text-red-500 mt-1 leading-tight flex items-center gap-1 font-semibold uppercase tracking-wider">
+              <ShieldAlert className="w-3 h-3 flex-shrink-0" /> {errors.duration}
+            </p>
+          ) : (
+            <div className="flex justify-between text-[9px] text-[#94A3B8] mt-1 uppercase tracking-wider font-mono">
+              <span>Hours</span>
+              <span>Mins</span>
+              <span>Secs</span>
             </div>
+          )}
+        </div>
+
+        {/* Distance */}
+        <div className="mt-2">
+          <label htmlFor="input-distance" className="block text-[11px] font-bold uppercase tracking-wider text-[#64748B] mb-1.5 flex items-center gap-1">
+            <Navigation className="w-3 h-3 text-[#64748B]" /> Distance *
+          </label>
+          <div className="flex">
+            <input
+              type="text"
+              id="input-distance"
+              value={data.distance}
+              onChange={(e) => {
+                let val = e.target.value;
+                // Allow only digits and up to one decimal point
+                val = val.replace(/[^0-9.]/g, '');
+                // Prevent multiple decimals
+                const parts = val.split('.');
+                if (parts.length > 2) {
+                  val = parts[0] + '.' + parts.slice(1).join('');
+                }
+                onChange('distance', val);
+              }}
+              placeholder="45.00"
+              className={`flex-1 min-w-0 h-11 px-4 text-sm font-semibold bg-white border-l-2 border-y-2 rounded-l-sm focus:outline-none transition-colors ${
+                errors.distance ? 'border-red-500 focus:border-red-600' : 'border-[#E2E8F0] focus:border-[#1A2B4C]'
+              }`}
+            />
+            <span
+              id="select-unit"
+              className="px-4 h-11 flex items-center justify-center text-xs font-black uppercase bg-[#F8FAFC] border-2 border-[#E2E8F0] rounded-r-sm border-l-0 text-[#1A2B4C] select-none"
+            >
+              KM
+            </span>
+          </div>
             {errors.distance ? (
               <p className="text-[10px] text-red-500 mt-1 flex items-center gap-1 font-semibold uppercase tracking-wider">
                 <ShieldAlert className="w-3 h-3" /> {errors.distance}
@@ -314,7 +320,6 @@ export const CertificateForm: React.FC<CertificateFormProps> = ({
             )}
           </div>
         </div>
-      </div>
 
       {/* Section 3: Ride Details & Custom Date (Optional) */}
       {/* <div className={`bg-white p-4 border-2 border-[#E2E8F0] rounded-sm space-y-3.5 ${mobileStep === 2 ? 'hidden md:block' : 'block'}`} id="form-optional-inputs">

@@ -37,6 +37,9 @@ import runWalkBg from '../assets/run_walk_bg.jpg';
 // @ts-ignore
 import halftoneCircle from '../assets/halftone_circle.png';
 import CertificateApp from './CertificateApp';
+// @ts-ignore
+import baackgroundimg from '../assets/baackgroundimg.png';
+
 
 interface DropdownProps {
   options: string[];
@@ -308,6 +311,7 @@ function PosterGenerator() {
   const [loadedCyclingBg, setLoadedCyclingBg] = useState<HTMLImageElement | null>(null);
   const [loadedRunWalkBg, setLoadedRunWalkBg] = useState<HTMLImageElement | null>(null);
   const [loadedHalftone, setLoadedHalftone] = useState<HTMLImageElement | null>(null);
+  const [loadedYouthDayBg, setLoadedYouthDayBg] = useState<HTMLImageElement | null>(null);
 
   useEffect(() => {
     const img = new Image();
@@ -327,18 +331,26 @@ function PosterGenerator() {
     img3.onload = () => {
       setLoadedHalftone(img3);
     };
+
+    const img4 = new Image();
+    img4.src = baackgroundimg;
+    img4.onload = () => {
+      setLoadedYouthDayBg(img4);
+    };
   }, []);
 
   // Primary unified form state
   const [state, setState] = useState<FormState>(() => {
     const path = typeof window !== 'undefined' ? window.location.pathname : '';
     const isWalkRunning = path.includes('/walk-runing');
+    const search = typeof window !== 'undefined' ? window.location.search : '';
+    const isYouthDay = new URLSearchParams(search).get('event') === 'youth-day';
     return {
       name: 'SACHIDA YADAV',
       date: '2026-01-26',
-      target: '100 KM',
+      target: isWalkRunning ? '21 KM' : '100 KM',
       photoUrl: null,
-      templateId: 'cycling-challenge',
+      templateId: isYouthDay ? 'youth-day' : 'cycling-challenge',
       photoX: 0,
       photoY: 0,
       photoScale: 1.0,
@@ -412,12 +424,15 @@ function PosterGenerator() {
     const handlePopState = () => {
       const path = window.location.pathname;
       const isWalkRunning = path.includes('/walk-runing');
+      const isYouthDay = new URLSearchParams(window.location.search).get('event') === 'youth-day';
       setState(prev => {
         const nextRoute = isWalkRunning ? 'walk-runing' as const : 'cycling' as const;
-        if (prev.activityRoute !== nextRoute) {
+        const nextTemplateId = isYouthDay ? 'youth-day' : (prev.templateId === 'youth-day' ? 'cycling-challenge' : prev.templateId);
+        if (prev.activityRoute !== nextRoute || prev.templateId !== nextTemplateId) {
           return {
             ...prev,
-            activityRoute: nextRoute
+            activityRoute: nextRoute,
+            templateId: nextTemplateId
           };
         }
         return prev;
@@ -430,12 +445,12 @@ function PosterGenerator() {
   // Redraw both canvases instantly when state, loadedPhoto, dragging state, or step/view state changes
   useEffect(() => {
     if (desktopCanvasRef.current) {
-      renderPoster(desktopCanvasRef.current, state, loadedPhoto, loadedCyclingBg, loadedRunWalkBg, isDragging, loadedHalftone);
+      renderPoster(desktopCanvasRef.current, state, loadedPhoto, loadedCyclingBg, loadedRunWalkBg, isDragging, loadedHalftone, loadedYouthDayBg);
     }
     if (mobileCanvasRef.current) {
-      renderPoster(mobileCanvasRef.current, state, loadedPhoto, loadedCyclingBg, loadedRunWalkBg, isDragging, loadedHalftone);
+      renderPoster(mobileCanvasRef.current, state, loadedPhoto, loadedCyclingBg, loadedRunWalkBg, isDragging, loadedHalftone, loadedYouthDayBg);
     }
-  }, [state, loadedPhoto, loadedCyclingBg, loadedRunWalkBg, isDragging, mobileStep, isGenerated, loadedHalftone]);
+  }, [state, loadedPhoto, loadedCyclingBg, loadedRunWalkBg, isDragging, mobileStep, isGenerated, loadedHalftone, loadedYouthDayBg]);
 
   // Hook scroll wheel zooming directly onto canvases to prevent page-level scrolling
   useEffect(() => {
@@ -709,11 +724,17 @@ function PosterGenerator() {
   const handleDownload = () => {
     const canvas = getActiveCanvas();
     if (!canvas) return;
-    const url = canvas.toDataURL('image/png');
-    const link = document.createElement('a');
-    link.download = `${state.name ? state.name.replace(/\s+/g, '_') : 'Challenge'}_Event_Poster.png`;
-    link.href = url;
-    link.click();
+    canvas.toBlob((blob) => {
+      if (!blob) return;
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.download = `${state.name ? state.name.replace(/\s+/g, '_') : 'Challenge'}_Event_Poster.png`;
+      link.href = url;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      setTimeout(() => URL.revokeObjectURL(url), 100);
+    }, 'image/png');
   };
 
   // Web Share API support or download fallback
@@ -727,7 +748,7 @@ function PosterGenerator() {
         canvas.toBlob(async (blob) => {
           if (!blob) return;
           const file = new File([blob], 'my_event_poster.png', { type: 'image/png' });
-          const isWalkRunning = state.templateId === 'run-walk-challenge';
+          const isWalkRunning = state.activityRoute === 'walk-runing';
           const challengeName = isWalkRunning ? 'Run Walk Challenge' : 'Cycling Challenge';
           const emojis = isWalkRunning ? '🏃‍♂️🚶‍♀️🏆' : '🚲🏆';
           const shareData = {
@@ -753,20 +774,35 @@ function PosterGenerator() {
     }
   };
 
-  // Dropdown options
-  const targetOptions = ['10 KM', '25 KM', '50 KM', '100 KM', 'Custom'];
+  // Dropdown options based on active route
+  const isWalkRunning = state.activityRoute === 'walk-runing';
+  const targetOptions = isWalkRunning
+    ? ['3 KM', '5 KM', '10 KM', '21 KM']
+    : ['10 KM', '25 KM', '50 KM', '100 KM'];
 
-  // Custom states for Target to support preset dropdown and typing custom input
-  const [targetPreset, setTargetPreset] = useState<string>('100 KM');
-  const [customTarget, setCustomTarget] = useState<string>('');
+  // States for Target to support preset dropdown
+  const [targetPreset, setTargetPreset] = useState<string>(() => {
+    const path = typeof window !== 'undefined' ? window.location.pathname : '';
+    const isWalkRunningRoute = path.includes('/walk-runing');
+    return isWalkRunningRoute ? '21 KM' : '100 KM';
+  });
+
+  // Keep targetPreset in sync if the activity route changes
+  useEffect(() => {
+    if (isWalkRunning) {
+      if (!['3 KM', '5 KM', '10 KM', '21 KM'].includes(targetPreset)) {
+        setTargetPreset('21 KM');
+      }
+    } else {
+      if (!['100 KM', '50 KM', '25 KM', '10 KM'].includes(targetPreset)) {
+        setTargetPreset('100 KM');
+      }
+    }
+  }, [state.activityRoute]);
 
   useEffect(() => {
-    if (targetPreset === 'Custom') {
-      setState(prev => ({ ...prev, target: customTarget || 'Custom' }));
-    } else {
-      setState(prev => ({ ...prev, target: targetPreset }));
-    }
-  }, [targetPreset, customTarget]);
+    setState(prev => ({ ...prev, target: targetPreset }));
+  }, [targetPreset]);
 
   return (
     <div className="min-h-screen bg-slate-50 flex flex-col items-center py-4 px-4 md:py-8 md:px-6">
@@ -802,38 +838,18 @@ function PosterGenerator() {
               </div>
             </div>
 
-            {/* Date Input */}
-            <div className="flex flex-col space-y-2">
-              <label className="text-[10px] font-bold text-neutral-500 uppercase tracking-wider">Event Completion Date</label>
-              <CustomDatePicker
-                selected={state.date}
-                onChange={(val) => setState(prev => ({ ...prev, date: val }))}
-                labelId="date-desktop"
-              />
-            </div>
+
 
             {/* Target Distance Input */}
             <div className="flex flex-col space-y-2">
               <label className="text-[10px] font-bold text-neutral-500 uppercase tracking-wider">Target Milestone</label>
-              <div className={`grid gap-3 ${targetPreset === 'Custom' ? 'grid-cols-2' : 'grid-cols-1'}`}>
+              <div className="grid gap-3 grid-cols-1">
                 <CustomDropdown
                   options={targetOptions}
                   selected={targetPreset}
                   onChange={setTargetPreset}
                   labelId="target-desktop"
                 />
-
-                {targetPreset === 'Custom' && (
-                  <div className="uber-input-container flex items-center px-4 py-3">
-                    <input
-                      type="text"
-                      placeholder="e.g. 75 KM"
-                      value={customTarget}
-                      onChange={(e) => setCustomTarget(e.target.value)}
-                      className="bg-transparent text-neutral-900 w-full outline-none font-medium text-sm focus:outline-none"
-                    />
-                  </div>
-                )}
               </div>
             </div>
           </section>
@@ -968,49 +984,51 @@ function PosterGenerator() {
           </section>
 
           {/* Card 3: Design Template Variants */}
-          <section className="uber-card p-6 flex flex-col space-y-4">
-            <div className="flex items-center space-x-2 border-b border-slate-200 pb-3">
-              <Sliders className="w-5 h-5 text-neutral-900" />
-              <h2 className="font-bold text-neutral-900 tracking-tight text-sm uppercase">3. Theme Templates</h2>
-            </div>
+          {state.templateId !== 'youth-day' && (
+            <section className="uber-card p-6 flex flex-col space-y-4">
+              <div className="flex items-center space-x-2 border-b border-slate-200 pb-3">
+                <Sliders className="w-5 h-5 text-neutral-900" />
+                <h2 className="font-bold text-neutral-900 tracking-tight text-sm uppercase">3. Theme Templates</h2>
+              </div>
 
-            <div className="grid grid-cols-1 gap-3">
-              {TEMPLATES.map((tpl) => {
-                const isActive = state.templateId === tpl.id;
-                return (
-                  <button
-                    key={tpl.id}
-                    type="button"
-                    onClick={() => setState(prev => ({ ...prev, templateId: tpl.id }))}
-                    className={`p-3.5 rounded-xl text-left transition flex items-center space-x-3.5 border ${
-                      isActive 
-                        ? 'bg-black text-white border-black' 
-                        : 'bg-white text-slate-800 border-slate-200 hover:bg-slate-50'
-                    }`}
-                  >
-                    {/* Tiny visual representation of gradient */}
-                    <div 
-                      className="w-10 h-10 rounded-lg shadow-inner flex items-center justify-center text-base"
-                      style={{ 
-                        background: tpl.id === 'cycling-challenge' 
-                        ? 'linear-gradient(135deg, #083c91, #d4fb02)' 
-                        : 'linear-gradient(135deg, #08253a, #c084fc)'
-                      }}
+              <div className="grid grid-cols-1 gap-3">
+                {TEMPLATES.filter(tpl => tpl.id !== 'youth-day').map((tpl) => {
+                  const isActive = state.templateId === tpl.id;
+                  return (
+                    <button
+                      key={tpl.id}
+                      type="button"
+                      onClick={() => setState(prev => ({ ...prev, templateId: tpl.id }))}
+                      className={`p-3.5 rounded-xl text-left transition flex items-center space-x-3.5 border ${
+                        isActive 
+                          ? 'bg-black text-white border-black' 
+                          : 'bg-white text-slate-800 border-slate-200 hover:bg-slate-50'
+                      }`}
                     >
-                      🎨
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="font-bold text-xs uppercase tracking-wide flex items-center justify-between">
-                        <span className={isActive ? 'text-white' : 'text-neutral-900'}>{tpl.name}</span>
-                        {isActive && <span className="text-[10px] bg-white text-black px-1.5 py-0.5 rounded-full font-black">Active</span>}
+                      {/* Tiny visual representation of gradient */}
+                      <div 
+                        className="w-10 h-10 rounded-lg shadow-inner flex items-center justify-center text-base"
+                        style={{ 
+                          background: tpl.id === 'cycling-challenge' 
+                          ? 'linear-gradient(135deg, #083c91, #d4fb02)' 
+                          : 'linear-gradient(135deg, #08253a, #c084fc)'
+                        }}
+                      >
+                        🎨
                       </div>
-                      <p className={`text-[10px] truncate mt-0.5 ${isActive ? 'text-slate-300' : 'text-slate-500'}`}>{tpl.description}</p>
-                    </div>
-                  </button>
-                );
-              })}
-            </div>
-          </section>
+                      <div className="flex-1 min-w-0">
+                        <div className="font-bold text-xs uppercase tracking-wide flex items-center justify-between">
+                          <span className={isActive ? 'text-white' : 'text-neutral-900'}>{tpl.name}</span>
+                          {isActive && <span className="text-[10px] bg-white text-black px-1.5 py-0.5 rounded-full font-black">Active</span>}
+                        </div>
+                        <p className={`text-[10px] truncate mt-0.5 ${isActive ? 'text-slate-300' : 'text-slate-500'}`}>{tpl.description}</p>
+                      </div>
+                    </button>
+                  );
+                })}
+              </div>
+            </section>
+          )}
         </div>
 
         {/* RIGHT PANEL: Large Live Rendering Canvas & Export Actions (7 Cols) */}
@@ -1120,7 +1138,7 @@ function PosterGenerator() {
           <div className="flex flex-col space-y-4 flex-1">
             <div className="uber-card p-5 flex flex-col space-y-4">
               <p className="text-xs font-semibold text-slate-500 leading-relaxed">
-                Add your runner details below to generate your event poster.
+                Add your details below to generate your event poster.
               </p>
 
               {/* Name */}
@@ -1139,15 +1157,7 @@ function PosterGenerator() {
                 </div>
               </div>
 
-              {/* Date */}
-              <div className="flex flex-col space-y-1.5">
-                <label className="text-[10px] font-bold text-neutral-500 uppercase tracking-wider">Completion Date</label>
-                <CustomDatePicker
-                  selected={state.date}
-                  onChange={(val) => setState(prev => ({ ...prev, date: val }))}
-                  labelId="date-mobile"
-                />
-              </div>
+
 
               {/* Target Dropdown / presets */}
               <div className="flex flex-col space-y-1.5">
@@ -1158,18 +1168,6 @@ function PosterGenerator() {
                   onChange={setTargetPreset}
                   labelId="target-mobile"
                 />
-
-                {targetPreset === 'Custom' && (
-                  <div className="uber-input-container flex items-center px-4 py-3.5 mt-2">
-                    <input
-                      type="text"
-                      placeholder="Enter custom milestone e.g. 75 KM"
-                      value={customTarget}
-                      onChange={(e) => setCustomTarget(e.target.value)}
-                      className="bg-transparent text-neutral-900 w-full outline-none font-bold text-sm focus:outline-none"
-                    />
-                  </div>
-                )}
               </div>
             </div>
 
@@ -1198,7 +1196,7 @@ function PosterGenerator() {
             {/* Live Canvas Interactive Frame */}
             <div className="uber-card p-4 flex flex-col items-center">
               
-              <div className="relative uber-canvas-frame overflow-hidden p-1.5 w-full max-w-[290px] aspect-square flex items-center justify-center bg-white">
+              <div className="relative uber-canvas-frame overflow-hidden p-1.5 w-full max-w-[350px] aspect-square flex items-center justify-center bg-white">
                 <canvas
                   id="event-poster-canvas-mobile"
                   ref={mobileCanvasRef}
@@ -1309,36 +1307,38 @@ function PosterGenerator() {
               </div>
 
               {/* Template selector carousel */}
-              <div className="flex flex-col space-y-1.5">
-                <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Select Poster Template Style</span>
-                <div className="flex space-x-3 overflow-x-auto pb-1 px-1 scroll-smooth snap-x">
-                  {TEMPLATES.map((tpl) => {
-                    const isSelected = state.templateId === tpl.id;
-                    return (
-                      <button
-                        key={tpl.id}
-                        type="button"
-                        onClick={() => setState(prev => ({ ...prev, templateId: tpl.id }))}
-                        className={`flex-none w-32 p-2.5 rounded-xl text-center snap-start transition border ${
-                          isSelected 
-                            ? 'bg-black text-white border-black' 
-                            : 'bg-white text-slate-800 border-slate-200 hover:bg-slate-50'
-                        }`}
-                      >
-                        <div 
-                          className="w-10 h-10 rounded-lg mx-auto shadow-inner mb-1.5"
-                          style={{ 
-                            background: tpl.id === 'cycling-challenge' 
-                              ? 'linear-gradient(135deg, #083c91, #d4fb02)' 
-                              : 'linear-gradient(135deg, #08253a, #c084fc)'
-                          }}
-                        />
-                        <div className={`font-extrabold text-[10px] truncate uppercase ${isSelected ? 'text-white' : 'text-slate-800'}`}>{tpl.name.split(' ')[0]}</div>
-                      </button>
-                    );
-                  })}
+              {state.templateId !== 'youth-day' && (
+                <div className="flex flex-col space-y-1.5">
+                  <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Select Poster Template Style</span>
+                  <div className="flex space-x-3 overflow-x-auto pb-1 px-1 scroll-smooth snap-x">
+                    {TEMPLATES.filter(tpl => tpl.id !== 'youth-day').map((tpl) => {
+                      const isSelected = state.templateId === tpl.id;
+                      return (
+                        <button
+                          key={tpl.id}
+                          type="button"
+                          onClick={() => setState(prev => ({ ...prev, templateId: tpl.id }))}
+                          className={`flex-none w-32 p-2.5 rounded-xl text-center snap-start transition border ${
+                            isSelected 
+                              ? 'bg-black text-white border-black' 
+                              : 'bg-white text-slate-800 border-slate-200 hover:bg-slate-50'
+                          }`}
+                        >
+                          <div 
+                            className="w-10 h-10 rounded-lg mx-auto shadow-inner mb-1.5"
+                            style={{ 
+                              background: tpl.id === 'cycling-challenge' 
+                                ? 'linear-gradient(135deg, #083c91, #d4fb02)' 
+                                : 'linear-gradient(135deg, #08253a, #c084fc)'
+                            }}
+                          />
+                          <div className={`font-extrabold text-[10px] truncate uppercase ${isSelected ? 'text-white' : 'text-slate-800'}`}>{tpl.name}</div>
+                        </button>
+                      );
+                    })}
+                  </div>
                 </div>
-              </div>
+              )}
 
             </div>
 
@@ -1361,7 +1361,7 @@ function PosterGenerator() {
           <div className="flex flex-col space-y-4 flex-1">
             <div className="uber-card p-5 flex flex-col items-center">
               
-              <div className="uber-canvas-frame p-1.5 w-full max-w-[290px] aspect-square bg-white">
+              <div className="uber-canvas-frame p-1.5 w-full max-w-[350px] aspect-square bg-white">
                 <canvas
                   id="event-poster-canvas-mobile-result"
                   ref={mobileCanvasRef}

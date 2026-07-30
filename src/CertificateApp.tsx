@@ -31,6 +31,7 @@ import {
 import { CertificateData, TEMPLATES } from './types';
 import { CertificatePreview } from './components/CertificatePreview';
 import { CertificateForm } from './components/CertificateForm';
+import { getTemplateForEvent } from './events';
 import html2canvas from 'html2canvas';
 import { jsPDF } from 'jspdf';
 
@@ -61,7 +62,21 @@ interface SavedCertificate {
 export default function CertificateApp() {
   const [data, setData] = useState<CertificateData>(() => {
     const saved = localStorage.getItem('current_cert_draft');
-    return saved ? JSON.parse(saved) : DEFAULT_FORM_STATE;
+    const initialData = saved ? JSON.parse(saved) : DEFAULT_FORM_STATE;
+
+    const path = typeof window !== 'undefined' ? window.location.pathname : '';
+    const pathSegments = path.split('/').filter(Boolean);
+    const eventName = pathSegments.length > 1 ? pathSegments[1] : '';
+    if (eventName) {
+      const template = getTemplateForEvent(eventName);
+      if (template) {
+        return {
+          ...initialData,
+          selectedTemplateId: template.id
+        };
+      }
+    }
+    return initialData;
   });
 
   const [view, setView] = useState<'edit' | 'result'>('edit');
@@ -91,6 +106,33 @@ export default function CertificateApp() {
     }
   }, []);
 
+  // Load event-specific template from URL path on mount/popstate
+  useEffect(() => {
+    const syncTemplateFromPath = () => {
+      const path = typeof window !== 'undefined' ? window.location.pathname : '';
+      const pathSegments = path.split('/').filter(Boolean);
+      const eventName = pathSegments.length > 1 ? pathSegments[1] : '';
+      if (eventName) {
+        const template = getTemplateForEvent(eventName);
+        if (template) {
+          setData(prev => {
+            if (prev.selectedTemplateId !== template.id) {
+              return {
+                ...prev,
+                selectedTemplateId: template.id
+              };
+            }
+            return prev;
+          });
+        }
+      }
+    };
+
+    syncTemplateFromPath();
+    window.addEventListener('popstate', syncTemplateFromPath);
+    return () => window.removeEventListener('popstate', syncTemplateFromPath);
+  }, []);
+
   // Demo presets for easy testing
   const loadDemo = (type: 'morning' | 'century') => {
     if (type === 'morning') {
@@ -111,7 +153,7 @@ export default function CertificateApp() {
         name: 'SARAH JENKINS',
         duration: '06:12:45',
         distance: '100.00',
-        distanceUnit: 'Miles',
+        distanceUnit: 'KM',
         rideName: 'Epic Alpine Century',
         rideDate: '18th July 2026',
         selectedTemplateId: 'cyber-teal',
@@ -596,7 +638,7 @@ export default function CertificateApp() {
               </div>
 
               {/* Left Panel: Form Customizer */}
-              <div className={`col-span-12 md:col-span-5 bg-white p-4 border-b-2 md:border-2 border-[#E2E8F0] md:rounded-sm flex flex-col space-y-4 overflow-y-auto md:max-h-[calc(100vh-120px)] ${mobileStep === 2 ? 'order-2' : 'order-1'}`} id="editor-left-panel">
+              <div className={`col-span-12 md:col-span-5 bg-white p-4 border-b-2 md:border-2 border-[#E2E8F0] md:rounded-sm flex flex-col space-y-4 md:overflow-y-auto md:max-h-[calc(100vh-120px)] ${mobileStep === 2 ? 'order-2' : 'order-1'}`} id="editor-left-panel">
                 <div className="flex items-center justify-between border-b-2 border-[#E2E8F0] pb-2">
                   <h2 className="text-xs font-black uppercase tracking-widest text-[#1A2B4C] flex items-center gap-1.5">
                     <Sliders className="w-4 h-4 text-[#64748B]" />
@@ -648,10 +690,11 @@ export default function CertificateApp() {
                     )}
                   </button>
                 </div>
+
               </div>
 
               {/* Right Panel: Live Scaling Certificate Preview */}
-              <div className={`col-span-12 md:col-span-7 p-4 flex flex-col justify-between bg-[#F1F5F9] md:border-2 border-[#E2E8F0] md:rounded-sm space-y-4 md:max-h-[calc(100vh-120px)] overflow-y-auto ${mobileStep === 1 ? 'hidden md:flex' : 'flex order-1'}`} id="editor-right-panel">
+              <div className={`col-span-12 md:col-span-7 p-4 flex flex-col justify-between bg-[#F1F5F9] md:border-2 border-[#E2E8F0] md:rounded-sm space-y-4 md:max-h-[calc(100vh-120px)] md:overflow-y-auto ${mobileStep === 1 ? 'hidden md:flex' : 'flex order-1'}`} id="editor-right-panel">
                 <div className="flex items-center justify-between" id="preview-header">
                   <span className="text-xs font-bold uppercase tracking-wider text-[#64748B]">Live Render Canvas</span>
                   <div className="flex items-center gap-1">
