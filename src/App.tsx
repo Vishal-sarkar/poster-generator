@@ -346,7 +346,7 @@ function PosterGenerator() {
     const search = typeof window !== 'undefined' ? window.location.search : '';
     const isYouthDay = new URLSearchParams(search).get('event') === 'youth-day';
     return {
-      name: 'SACHIDA YADAV',
+      name: '',
       date: '2026-01-26',
       target: isWalkRunning ? '21 KM' : '100 KM',
       photoUrl: null,
@@ -1243,7 +1243,7 @@ function PosterGenerator() {
 
                   <div className="flex items-center justify-between">
                     <button
-                      type="button"
+                      type="button" 
                       onClick={handleRotate90}
                       className="py-1.5 px-3 uber-btn-secondary text-[10px] flex items-center space-x-1"
                     >
@@ -1273,7 +1273,7 @@ function PosterGenerator() {
               
               {/* Photo Input Trigger Row */}
               <div className="flex items-center justify-between bg-slate-50 p-2.5 rounded-xl border border-slate-200">
-                <span className="text-xs font-bold text-slate-600 uppercase">Participant Photo</span>
+                <span className="text-xs font-bold text-slate-600 uppercase">Upload Photo</span>
                 
                 <div className="flex items-center space-x-2.5">
                   {/* Circular file trigger */}

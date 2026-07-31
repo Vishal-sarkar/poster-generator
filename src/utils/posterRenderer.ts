@@ -771,9 +771,9 @@ export function renderPoster(
       ctx.fillText(nameUpper, config.frameX + config.frameWidth / 2, config.frameY + config.frameHeight + 30);
     }
 
-    // 2. Draw gold target banner
+    // 2. Draw gold target banner (aligned with outer edge of the black border above it)
     ctx.fillStyle = '#c9933b';
-    ctx.fillRect(config.frameX, config.frameY + config.frameHeight + nameBannerHeight, config.frameWidth, 60);
+    ctx.fillRect(config.frameX - 6, config.frameY + config.frameHeight + nameBannerHeight, config.frameWidth + 12, 60);
 
     // Centered target text
     ctx.fillStyle = '#000000';
@@ -782,6 +782,22 @@ export function renderPoster(
       ? target.toUpperCase() 
       : `MY TARGET: ${target.toUpperCase()}`;
     ctx.fillText(targetStr, config.frameX + config.frameWidth / 2, config.frameY + config.frameHeight + nameBannerHeight + 30);
+
+    // 3. Draw green borders around the photo frame and green name banner
+    ctx.save();
+    ctx.strokeStyle = '#053724';
+    ctx.lineWidth = 12;
+    ctx.lineJoin = 'miter';
+    
+    // Draw outer boundary around photo and name banner
+    ctx.strokeRect(config.frameX, config.frameY, config.frameWidth, config.frameHeight + nameBannerHeight);
+    
+    // Draw horizontal divider between photo and name banner
+    ctx.beginPath();
+    ctx.moveTo(config.frameX, config.frameY + config.frameHeight);
+    ctx.lineTo(config.frameX + config.frameWidth, config.frameY + config.frameHeight);
+    ctx.stroke();
+    ctx.restore();
 
   } else {
     // cycling-challenge
