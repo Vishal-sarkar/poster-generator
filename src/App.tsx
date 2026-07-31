@@ -1263,7 +1263,7 @@ function PosterGenerator() {
                 </div>
               ) : (
                 <p className="text-[10px] text-slate-500 font-bold text-center mt-2.5">
-                  ⚡ Use sample athlete or tap circular photo button below to crop!
+                   Tap circular photo button below to crop!
                 </p>
               )}
             </div>
@@ -1367,13 +1367,6 @@ function PosterGenerator() {
                   ref={mobileCanvasRef}
                   className="w-full h-full rounded-lg"
                 />
-              </div>
-
-              <div className="mt-4 text-center">
-                <h4 className="text-sm font-bold text-neutral-900">Your Poster is Ready! 🏆</h4>
-                <p className="text-[10px] text-slate-500 font-medium mt-1">
-                  Compiled at crisp 1080x1080 UHD resolution.
-                </p>
               </div>
             </div>
 

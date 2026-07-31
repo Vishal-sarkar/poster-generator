@@ -563,14 +563,20 @@ export function renderPoster(
   // --------------------------------------------------
   // 2. DRAW PHOTO (WITH CLIPPING MASK AND ROTATION IF APPLICABLE)
   // --------------------------------------------------
-  const frameCenterX = config.frameX + config.frameWidth / 2;
-  const frameCenterY = config.frameY + config.frameHeight / 2;
+  const isYouthDay = config.id === 'youth-day';
+  const cardCenterX = config.frameX + config.frameWidth / 2;
+  const cardCenterY = isYouthDay
+    ? config.frameY + (config.frameHeight + 120) / 2
+    : config.frameY + config.frameHeight / 2;
+
+  const photoFrameCenterX = config.frameX + config.frameWidth / 2;
+  const photoFrameCenterY = config.frameY + config.frameHeight / 2;
 
   ctx.save();
   if (config.frameRotation) {
-    ctx.translate(frameCenterX, frameCenterY);
+    ctx.translate(cardCenterX, cardCenterY);
     ctx.rotate((config.frameRotation * Math.PI) / 180);
-    ctx.translate(-frameCenterX, -frameCenterY);
+    ctx.translate(-cardCenterX, -cardCenterY);
   }
 
   if (config.id === 'run-walk-challenge') {
@@ -661,6 +667,122 @@ export function renderPoster(
     ctx.fillText('009', config.frameX + 35, config.frameY + 45);
     ctx.fillText('◀ 600', config.frameX + 13, config.frameY + 280);
 
+  } else if (config.id === 'youth-day') {
+    // Draw the rounded photo frame path and clip
+    ctx.save();
+    drawRoundedRect(ctx, config.frameX, config.frameY, config.frameWidth, config.frameHeight, config.frameRadius);
+    ctx.clip();
+
+    ctx.fillStyle = '#d0d7de';
+    ctx.fillRect(config.frameX, config.frameY, config.frameWidth, config.frameHeight);
+
+    if (loadedPhoto) {
+      ctx.save();
+      ctx.translate(photoFrameCenterX, photoFrameCenterY);
+      ctx.translate(photoX, photoY);
+      ctx.rotate((photoRotation * Math.PI) / 180);
+      ctx.scale(photoScale, photoScale);
+
+      const imgRatio = loadedPhoto.width / loadedPhoto.height;
+      let drawW = config.frameWidth;
+      let drawH = config.frameWidth / imgRatio;
+      if (drawH < config.frameHeight) {
+        drawH = config.frameHeight;
+        drawW = config.frameHeight * imgRatio;
+      }
+      ctx.drawImage(loadedPhoto, -drawW / 2, -drawH / 2, drawW, drawH);
+      ctx.restore();
+    } else {
+      // Draw landscape placeholder (sky, hills, cloud)
+      drawLandscapePlaceholder(ctx, config.frameX, config.frameY, config.frameWidth, config.frameHeight);
+    }
+
+    if (isInteractive && loadedPhoto) {
+      ctx.strokeStyle = 'rgba(255, 255, 255, 0.4)';
+      ctx.lineWidth = 1.5;
+      ctx.setLineDash([6, 6]);
+      ctx.beginPath();
+      ctx.moveTo(config.frameX + config.frameWidth / 3, config.frameY);
+      ctx.lineTo(config.frameX + config.frameWidth / 3, config.frameY + config.frameHeight);
+      ctx.moveTo(config.frameX + (2 * config.frameWidth) / 3, config.frameY);
+      ctx.lineTo(config.frameX + (2 * config.frameWidth) / 3, config.frameY + config.frameHeight);
+      ctx.moveTo(config.frameX, config.frameY + config.frameHeight / 3);
+      ctx.lineTo(config.frameX + config.frameWidth, config.frameY + config.frameHeight / 3);
+      ctx.moveTo(config.frameX, config.frameY + (2 * config.frameHeight) / 3);
+      ctx.lineTo(config.frameX + config.frameWidth, config.frameY + (2 * config.frameHeight) / 3);
+      ctx.stroke();
+      ctx.setLineDash([]);
+    }
+    ctx.restore(); // Restore from photo clip
+
+    // Draw the green and gold banners under rotation!
+    const nameUpper = name.toUpperCase() || 'YOUR NAME';
+    const maxNameWidth = config.frameWidth - 40; // 20px padding on each side
+
+    ctx.font = 'bold 32px "Montserrat", sans-serif';
+    const singleLineWidth = ctx.measureText(nameUpper).width;
+    const isTwoLines = singleLineWidth > maxNameWidth && nameUpper.includes(' ');
+    const nameBannerHeight = isTwoLines ? 100 : 60;
+
+    // 1. Draw deep green name banner
+    ctx.fillStyle = '#053724';
+    ctx.fillRect(config.frameX, config.frameY + config.frameHeight, config.frameWidth, nameBannerHeight);
+
+    // Centered name text
+    ctx.fillStyle = '#ffffff';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+
+    if (isTwoLines) {
+      // Split into two lines
+      const words = nameUpper.split(' ');
+      const midPoint = Math.ceil(words.length / 2);
+      const line1 = words.slice(0, midPoint).join(' ');
+      const line2 = words.slice(midPoint).join(' ');
+
+      // Keep the same font size (32px) unless the split lines themselves still exceed maxNameWidth
+      let fontSize = 32;
+      ctx.font = `bold ${fontSize}px "Montserrat", sans-serif`;
+      
+      const width1 = ctx.measureText(line1).width;
+      const width2 = ctx.measureText(line2).width;
+      const longestLine = Math.max(width1, width2);
+
+      if (longestLine > maxNameWidth) {
+        fontSize = Math.floor(fontSize * (maxNameWidth / longestLine));
+        fontSize = Math.max(fontSize, 16); // don't scale below 16px
+        ctx.font = `bold ${fontSize}px "Montserrat", sans-serif`;
+      }
+      
+      // Draw both lines with vertical offsets (banner height is 100)
+      ctx.fillText(line1, config.frameX + config.frameWidth / 2, config.frameY + config.frameHeight + 25);
+      ctx.fillText(line2, config.frameX + config.frameWidth / 2, config.frameY + config.frameHeight + 70);
+    } else {
+      // Single line rendering with dynamic font size scaling if it overflows
+      let fontSize = 32;
+      ctx.font = `bold ${fontSize}px "Montserrat", sans-serif`;
+      let textWidth = ctx.measureText(nameUpper).width;
+      
+      if (textWidth > maxNameWidth) {
+        fontSize = Math.floor(fontSize * (maxNameWidth / textWidth));
+        fontSize = Math.max(fontSize, 16); // don't scale below 16px
+        ctx.font = `bold ${fontSize}px "Montserrat", sans-serif`;
+      }
+      ctx.fillText(nameUpper, config.frameX + config.frameWidth / 2, config.frameY + config.frameHeight + 30);
+    }
+
+    // 2. Draw gold target banner
+    ctx.fillStyle = '#c9933b';
+    ctx.fillRect(config.frameX, config.frameY + config.frameHeight + nameBannerHeight, config.frameWidth, 60);
+
+    // Centered target text
+    ctx.fillStyle = '#000000';
+    ctx.font = 'bold 30px "Space Grotesk", "Montserrat", sans-serif';
+    const targetStr = target.toUpperCase().includes('TARGET') 
+      ? target.toUpperCase() 
+      : `MY TARGET: ${target.toUpperCase()}`;
+    ctx.fillText(targetStr, config.frameX + config.frameWidth / 2, config.frameY + config.frameHeight + nameBannerHeight + 30);
+
   } else {
     // cycling-challenge
     // Draw the rounded photo frame path and clip
@@ -672,7 +794,7 @@ export function renderPoster(
 
     if (loadedPhoto) {
       ctx.save();
-      ctx.translate(frameCenterX, frameCenterY);
+      ctx.translate(photoFrameCenterX, photoFrameCenterY);
       ctx.translate(photoX, photoY);
       ctx.rotate((photoRotation * Math.PI) / 180);
       ctx.scale(photoScale, photoScale);
@@ -728,28 +850,7 @@ export function renderPoster(
   // 3. DRAW TEMPLATE FOREGROUND LAYERS & TEXT ON TOP
   // --------------------------------------------------
   if (config.id === 'youth-day') {
-    // 1. Draw deep green name banner (x: 512, y: 730, w: 568, h: 60)
-    ctx.fillStyle = '#053724';
-    ctx.fillRect(512, 730, 568, 60);
-
-    // Centered name text
-    ctx.fillStyle = '#ffffff';
-    ctx.font = 'bold 32px "Montserrat", sans-serif';
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'middle';
-    ctx.fillText(name.toUpperCase() || 'YOUR NAME', 796, 760);
-
-    // 2. Draw gold target banner (x: 512, y: 790, w: 568, h: 60)
-    ctx.fillStyle = '#c9933b';
-    ctx.fillRect(512, 790, 568, 60);
-
-    // Centered target text
-    ctx.fillStyle = '#000000';
-    ctx.font = 'bold 30px "Space Grotesk", "Montserrat", sans-serif';
-    const targetStr = target.toUpperCase().includes('TARGET') 
-      ? target.toUpperCase() 
-      : `MY TARGET: ${target.toUpperCase()}`;
-    ctx.fillText(targetStr, 796, 820);
+    // Handled in the rotated Step 2 drawing block
   } else if (config.id === 'cycling-challenge') {
     // --------------------------------------------------
     // TEMPLATE 1: CYCLING DISTANCE CHALLENGE
