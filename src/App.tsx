@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { useState, useEffect, useRef, MouseEvent, TouchEvent, ChangeEvent } from 'react';
+import React, { useState, useEffect, useRef, MouseEvent, TouchEvent, ChangeEvent } from 'react';
 import { 
   User, 
   Calendar, 
@@ -23,7 +23,8 @@ import {
   Sliders, 
   FileText,
   Smartphone,
-  Laptop
+  Laptop,
+  Target
 } from 'lucide-react';
 import { 
   renderPoster, 
@@ -46,9 +47,11 @@ interface DropdownProps {
   selected: string;
   onChange: (val: string) => void;
   labelId: string;
+  icon?: React.ReactNode;
+  textClassName?: string;
 }
 
-function CustomDropdown({ options, selected, onChange, labelId }: DropdownProps) {
+function CustomDropdown({ options, selected, onChange, labelId, icon, textClassName = "text-sm font-semibold" }: DropdownProps) {
   const [isOpen, setIsOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement | null>(null);
 
@@ -62,15 +65,24 @@ function CustomDropdown({ options, selected, onChange, labelId }: DropdownProps)
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
+  const isPlaceholder = selected === 'Select Target';
+
   return (
     <div className="relative w-full" ref={dropdownRef}>
       <button
         id={labelId}
         type="button"
         onClick={() => setIsOpen(!isOpen)}
-        className="w-full flex items-center justify-between px-4 py-3 bg-white border border-slate-200 rounded-xl font-semibold text-sm text-neutral-900 focus:outline-none focus:border-black focus:ring-1 focus:ring-black transition cursor-pointer"
+        className={`uber-input-container w-full flex items-center justify-between px-4 py-3 text-left focus:outline-none focus:bg-white focus:border-black focus:ring-1 focus:ring-black transition cursor-pointer ${
+          isOpen ? 'bg-white border-black ring-1 ring-black' : ''
+        }`}
       >
-        <span>{selected}</span>
+        <div className="flex items-center">
+          {icon && <span className="mr-3 flex items-center">{icon}</span>}
+          <span className={`${textClassName} ${isPlaceholder ? 'text-slate-400' : 'text-neutral-900'}`}>
+            {selected}
+          </span>
+        </div>
         <svg
           className={`w-4 h-4 text-slate-500 transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`}
           fill="none"
@@ -94,7 +106,7 @@ function CustomDropdown({ options, selected, onChange, labelId }: DropdownProps)
                       onChange(opt);
                       setIsOpen(false);
                     }}
-                    className={`w-full text-left px-4 py-2.5 text-sm transition cursor-pointer ${
+                    className={`w-full text-left px-4 py-2.5 transition cursor-pointer ${textClassName} ${
                       isSelected
                         ? 'bg-neutral-900 text-white font-bold'
                         : 'text-neutral-700 hover:bg-slate-50 hover:text-black'
@@ -348,7 +360,7 @@ function PosterGenerator() {
     return {
       name: '',
       date: '2026-01-26',
-      target: isWalkRunning ? '21 KM' : '100 KM',
+      target: 'Select Target',
       photoUrl: null,
       templateId: isYouthDay ? 'youth-day' : 'cycling-challenge',
       photoX: 0,
@@ -713,7 +725,7 @@ function PosterGenerator() {
   };
 
   // Input validation check (Step 1 fields)
-  const isFormValid = state.name.trim().length > 0 && state.date.trim().length > 0 && state.target.trim().length > 0;
+  const isFormValid = state.name.trim().length > 0 && state.date.trim().length > 0 && state.target.trim().length > 0 && state.target !== 'Select Target';
 
   // Helper to get whichever canvas is currently active/visible
   const getActiveCanvas = () => {
@@ -781,21 +793,19 @@ function PosterGenerator() {
     : ['10 KM', '25 KM', '50 KM', '100 KM'];
 
   // States for Target to support preset dropdown
-  const [targetPreset, setTargetPreset] = useState<string>(() => {
-    const path = typeof window !== 'undefined' ? window.location.pathname : '';
-    const isWalkRunningRoute = path.includes('/walk-runing');
-    return isWalkRunningRoute ? '21 KM' : '100 KM';
-  });
+  const [targetPreset, setTargetPreset] = useState<string>('Select Target');
 
   // Keep targetPreset in sync if the activity route changes
   useEffect(() => {
+    if (targetPreset === 'Select Target') return;
+
     if (isWalkRunning) {
       if (!['3 KM', '5 KM', '10 KM', '21 KM'].includes(targetPreset)) {
-        setTargetPreset('21 KM');
+        setTargetPreset('Select Target');
       }
     } else {
       if (!['100 KM', '50 KM', '25 KM', '10 KM'].includes(targetPreset)) {
-        setTargetPreset('100 KM');
+        setTargetPreset('Select Target');
       }
     }
   }, [state.activityRoute]);
@@ -849,6 +859,8 @@ function PosterGenerator() {
                   selected={targetPreset}
                   onChange={setTargetPreset}
                   labelId="target-desktop"
+                  icon={<Target className="w-4 h-4 text-slate-400" />}
+                  textClassName="text-sm font-medium"
                 />
               </div>
             </div>
@@ -1149,7 +1161,7 @@ function PosterGenerator() {
                   <input
                     id="name-mobile"
                     type="text"
-                    placeholder="e.g. SACHIDA YADAV"
+                    placeholder="Enter You Name"
                     value={state.name}
                     onChange={(e) => setState(prev => ({ ...prev, name: e.target.value }))}
                     className="bg-transparent text-neutral-900 w-full outline-none font-bold text-base focus:outline-none"
@@ -1167,6 +1179,8 @@ function PosterGenerator() {
                   selected={targetPreset}
                   onChange={setTargetPreset}
                   labelId="target-mobile"
+                  icon={<Target className="w-5 h-5 text-slate-400" />}
+                  textClassName="text-base font-bold"
                 />
               </div>
             </div>
@@ -1257,7 +1271,7 @@ function PosterGenerator() {
                       className="py-1.5 px-3 uber-btn-secondary text-[10px] flex items-center space-x-1"
                     >
                       <RefreshCw className="w-3 h-3 text-black" />
-                      <span>Reset Pan</span>
+                      <span>Reset</span>
                     </button>
                   </div>
                 </div>
