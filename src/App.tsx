@@ -1152,7 +1152,7 @@ function PosterGenerator() {
                     placeholder="e.g. SACHIDA YADAV"
                     value={state.name}
                     onChange={(e) => setState(prev => ({ ...prev, name: e.target.value }))}
-                    className="bg-transparent text-neutral-900 w-full outline-none font-bold text-sm focus:outline-none"
+                    className="bg-transparent text-neutral-900 w-full outline-none font-bold text-base focus:outline-none"
                   />
                 </div>
               </div>
@@ -1365,7 +1365,7 @@ function PosterGenerator() {
                 <canvas
                   id="event-poster-canvas-mobile-result"
                   ref={mobileCanvasRef}
-                  className="w-full h-full rounded-lg"
+                  className="w-full h-full rounded-lg touch-pan-y"
                 />
               </div>
             </div>
