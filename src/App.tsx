@@ -1207,7 +1207,7 @@ function PosterGenerator() {
                   onMouseMove={handleMouseMove}
                   onMouseUp={handleMouseUpOrLeave}
                   onMouseLeave={handleMouseUpOrLeave}
-                  className="w-full h-full rounded-lg"
+                  className="w-full h-full rounded-lg touch-none"
                 />
 
                 {loadedPhoto ? (
