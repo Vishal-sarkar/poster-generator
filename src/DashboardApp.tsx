@@ -12,7 +12,9 @@ import {
   Mail, 
   RefreshCw, 
   Database,
-  TrendingUp
+  TrendingUp,
+  Eye,
+  EyeOff
 } from 'lucide-react';
 
 interface CertificateLog {
@@ -47,6 +49,22 @@ export default function DashboardApp() {
   const [searchTerm, setSearchTerm] = useState('');
   const [typeFilter, setTypeFilter] = useState<'all' | 'cycling' | 'walk-running'>('all');
   const [selectedImageUrl, setSelectedImageUrl] = useState<string | null>(null);
+  const [showPassword, setShowPassword] = useState(false);
+
+  useEffect(() => {
+    const debugDB = async () => {
+      try {
+        const { data, error } = await supabase
+          .from('dashboard_users')
+          .select('*');
+        console.log('DEBUG [DB Users List]:', data);
+        if (error) console.error('DEBUG [DB Users Error]:', error);
+      } catch (e) {
+        console.error('DEBUG [DB Catch]:', e);
+      }
+    };
+    debugDB();
+  }, []);
 
   useEffect(() => {
     if (isAuthenticated) {
@@ -196,7 +214,7 @@ export default function DashboardApp() {
                 <input
                   type="text"
                   required
-                  placeholder="enter username"
+                  placeholder="Enter username"
                   value={username}
                   onChange={(e) => setUsername(e.target.value)}
                   className="w-full h-11 px-4 text-sm font-semibold bg-white border-2 border-[#E2E8F0] focus:border-[#1A2B4C] rounded-sm focus:outline-none transition-colors placeholder:text-slate-400 placeholder:font-normal"
@@ -208,15 +226,23 @@ export default function DashboardApp() {
               <label className="block text-[10px] font-black uppercase tracking-wider text-[#64748B] mb-1.5">
                 Password
               </label>
-              <div className="relative">
+              <div className="relative flex items-center">
                 <input
-                  type="password"
+                  type={showPassword ? "text" : "password"}
                   required
-                  placeholder="enter password"
+                  placeholder="Enter password"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  className="w-full h-11 px-4 text-sm font-semibold bg-white border-2 border-[#E2E8F0] focus:border-[#1A2B4C] rounded-sm focus:outline-none transition-colors placeholder:text-slate-400 placeholder:font-normal"
+                  className="w-full h-11 pl-4 pr-10 text-sm font-semibold bg-white border-2 border-[#E2E8F0] focus:border-[#1A2B4C] rounded-sm focus:outline-none transition-colors placeholder:text-slate-400 placeholder:font-normal"
                 />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-3 text-slate-400 hover:text-black focus:outline-none transition cursor-pointer select-none"
+                  title={showPassword ? "Hide password" : "Show password"}
+                >
+                  {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                </button>
               </div>
             </div>
 
