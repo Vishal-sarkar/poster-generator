@@ -38,6 +38,7 @@ import runWalkBg from '../assets/run_walk_bg.jpg';
 // @ts-ignore
 import halftoneCircle from '../assets/halftone_circle.png';
 import CertificateApp from './CertificateApp';
+import DashboardApp from './DashboardApp';
 // @ts-ignore
 import baackgroundimg from '../assets/baackgroundimg.png';
 
@@ -1447,7 +1448,12 @@ export default function App() {
     return () => window.removeEventListener('popstate', handlePopState);
   }, []);
 
+  const isDashboardRoute = path.includes('/dashboard');
   const isCertificateRoute = path.includes('/certificate') || path.includes('/certificates');
+
+  if (isDashboardRoute) {
+    return <DashboardApp />;
+  }
 
   if (isCertificateRoute) {
     return <CertificateApp />;

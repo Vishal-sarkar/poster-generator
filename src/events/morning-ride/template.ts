@@ -1,7 +1,7 @@
 import { TemplateConfig } from '../../types';
 
 export const template: TemplateConfig = {
-  id: 'navy-gold',
+  id: '1',
   name: 'Classic Navy & Gold',
   primaryColor: '#0A2540', // Deep Navy
   accentColor: '#C5A880',  // Muted Gold

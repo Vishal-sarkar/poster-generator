@@ -34,6 +34,7 @@ import { CertificateForm } from './components/CertificateForm';
 import { getTemplateForEvent } from './events';
 import html2canvas from 'html2canvas';
 import { jsPDF } from 'jspdf';
+import { supabase } from './supabaseClient';
 
 // Initial state for certificate input
 const DEFAULT_FORM_STATE: CertificateData = {
@@ -43,7 +44,7 @@ const DEFAULT_FORM_STATE: CertificateData = {
   distanceUnit: '',
   rideName: '',
   rideDate: '',
-  selectedTemplateId: 'navy-gold',
+  selectedTemplateId: '1',
   signatureName: 'Unique Jain',
   signatureRole: 'Founder & CEO',
   signatureText: 'Unique Jain',
@@ -65,10 +66,8 @@ export default function CertificateApp() {
   const [data, setData] = useState<CertificateData>(() => {
     const initialData = DEFAULT_FORM_STATE;
 
-    const path = typeof window !== 'undefined' ? window.location.pathname : '';
-    const pathSegments = path.split('/').filter(Boolean);
-    const eventSegment = pathSegments.find(segment => getTemplateForEvent(segment) !== null);
-    const eventName = eventSegment || '';
+    const searchParams = typeof window !== 'undefined' ? new URLSearchParams(window.location.search) : null;
+    const eventName = searchParams ? searchParams.get('event') || '' : '';
     if (eventName) {
       const template = getTemplateForEvent(eventName);
       if (template) {
@@ -110,9 +109,8 @@ export default function CertificateApp() {
   useEffect(() => {
     const syncTemplateFromPath = () => {
       const path = typeof window !== 'undefined' ? window.location.pathname : '';
-      const pathSegments = path.split('/').filter(Boolean);
-      const eventSegment = pathSegments.find(segment => getTemplateForEvent(segment) !== null);
-      const eventName = eventSegment || '';
+      const searchParams = typeof window !== 'undefined' ? new URLSearchParams(window.location.search) : null;
+      const eventName = searchParams ? searchParams.get('event') || '' : '';
 
       setData(prev => {
         let nextTemplateId = prev.selectedTemplateId;
@@ -158,6 +156,24 @@ export default function CertificateApp() {
     window.addEventListener('popstate', syncTemplateFromPath);
     return () => window.removeEventListener('popstate', syncTemplateFromPath);
   }, []);
+
+    // Immediate Connection test
+  useEffect(() => {
+    const testConnection = async () => {
+      const { data, error } = await supabase
+        .from('certificates')
+        .select('id')
+        .limit(1);
+
+      if (error) {
+        console.error('Supabase connection test failed ❌:', error.message);
+      } else {
+        console.log('Supabase connection test successful! Connected to DB config 🚀');
+      }
+    };
+    testConnection();
+  }, []);
+
 
   // Demo presets for easy testing
   const loadDemo = (type: 'morning' | 'century') => {
@@ -367,6 +383,44 @@ export default function CertificateApp() {
     }
   };
 
+  // Save certificate details to Supabase database log
+  const saveDataToBackend = async () => {
+    try {
+      const path = typeof window !== 'undefined' ? window.location.pathname : '';
+      const certificateType = path.includes('/walk-runing') ? 'walk-running' : 'cycling';
+
+      const searchParams = typeof window !== 'undefined' ? new URLSearchParams(window.location.search) : null;
+      const eventName = searchParams ? searchParams.get('event') || 'morning-ride' : 'morning-ride';
+      
+      const targetStr = data.distance && data.distanceUnit
+        ? `${parseFloat(data.distance)} ${data.distanceUnit}`
+        : 'SELECT TARGET';
+
+      const { data: record, error } = await supabase
+        .from('certificates')
+        .insert({
+          name: data.name,
+          phone_number: data.phoneNumber,
+          email: data.email,
+          activity_date: data.rideDate,
+          target_distance: targetStr,
+          duration: data.duration,
+          selected_template_id: data.selectedTemplateId,
+          certificate_type: certificateType,
+          event_name: eventName,
+        })
+        .select('id')
+        .single();
+
+      if (error) throw error;
+      console.log('Record inserted successfully! Generated ID:', record?.id);
+    } catch (err) {
+      console.error('Failed to log form metrics:', err);
+    }
+  };
+
+
+
   // Compile / Generate Certificate
   const handleGenerateCertificate = async () => {
     if (!isValid) {
@@ -404,22 +458,9 @@ export default function CertificateApp() {
       const imgUrl = canvas.toDataURL('image/png');
       setGeneratedImgUrl(imgUrl);
 
-      // Save into history
-      const newHistoryItem: SavedCertificate = {
-        id: Date.now().toString(),
-        name: data.name,
-        duration: data.duration,
-        distance: `${data.distance} ${data.distanceUnit}`,
-        rideName: data.rideName.trim() || 'Achievement Challenge',
-        date: data.rideDate.trim() || new Date().toLocaleDateString('en-US', { day: 'numeric', month: 'long', year: 'numeric' }),
-        imgUrl: imgUrl,
-      };
-
-      const updatedHistory = [newHistoryItem, ...history.slice(0, 9)]; // Max 10 items in history
-      setHistory(updatedHistory);
-      localStorage.setItem('certificate_history', JSON.stringify(updatedHistory));
       
       setToastMessage('Certificate Compiled Successfully!');
+      await saveDataToBackend();
     } catch (err) {
       console.error('Error rendering HTML to Canvas:', err);
       setGeneratedImgUrl('');
@@ -695,7 +736,7 @@ export default function CertificateApp() {
               </div>
 
               {/* Left Panel: Form Customizer */}
-              <div className={`col-span-12 md:col-span-5 bg-white p-4  md:border-2 border-[#E2E8F0] md:rounded-sm flex flex-col space-y-4 md:overflow-y-auto md:max-h-[calc(100vh-120px)] ${mobileStep === 2 ? 'order-2' : 'order-1'}`} id="editor-left-panel">
+              <div className={`col-span-12 md:col-span-5 bg-white p-4 md:border-2 border-[#E2E8F0] md:rounded-sm flex-col space-y-4 md:overflow-y-auto md:max-h-[calc(100vh-120px)] ${mobileStep === 2 ? 'hidden md:flex' : 'flex'}`} id="editor-left-panel">
                 {/* React form component with inline template picker */}
                 <CertificateForm
                   data={data}
@@ -839,21 +880,10 @@ export default function CertificateApp() {
               </div>
 
               {/* Left Column: Big Beautiful Certificate Export Review */}
-              <div className="col-span-12 md:col-span-8 flex flex-col justify-center items-center bg-white p-4 border-b-2 md:border-2 border-[#E2E8F0] md:rounded-sm space-y-4" id="result-left-panel">
-                <div className="w-full flex items-center justify-between border-b-2 border-[#E2E8F0] pb-2">
-                  <div>
-                    <h2 className="text-xs font-black uppercase tracking-widest text-[#1A2B4C] flex items-center gap-1.5">
-                      <Award className="w-4 h-4 text-[#C5A059]" />
-                      Final Certificate Record
-                    </h2>
-                    <p className="text-[10px] text-[#64748B] font-mono uppercase tracking-wider">1414 x 970 high resolution pixel print capture</p>
-                  </div>
-                  <span className="px-2 py-0.5 bg-[#1A2B4C]/10 border border-[#1A2B4C]/20 text-[#1A2B4C] text-[10px] font-black rounded-sm uppercase tracking-wider">
-                    Ready
-                  </span>
-                </div>
+              <div className="col-span-12 md:col-span-8 flex flex-col justify-center items-center bg-white p-4  md:border-2 border-[#E2E8F0] md:rounded-sm space-y-4" id="result-left-panel">
 
-                <div className="w-full flex-1 flex items-center justify-center bg-[#F1F5F9] border border-[#E2E8F0] p-2 rounded-sm overflow-hidden" id="final-artifact-wrapper">
+
+                <div className="w-full flex-1 flex items-center justify-center bg-[#F1F5F9] border border-[#E2E8F0] rounded-sm overflow-hidden" id="final-artifact-wrapper">
                   {generatedImgUrl ? (
                     <img 
                       src={generatedImgUrl} 
@@ -876,12 +906,9 @@ export default function CertificateApp() {
               </div>
 
               {/* Right Column: Flat Export Tool panel */}
-              <div className="col-span-12 md:col-span-4 bg-white p-4 border-2 border-[#E2E8F0] rounded-sm flex flex-col justify-between space-y-4" id="result-right-panel">
+              <div className="col-span-12 md:col-span-4 bg-white p-4 md:border-2 md:border-[#E2E8F0] rounded-sm flex flex-col justify-between space-y-4" id="result-right-panel">
                 <div className="space-y-4">
-                  <div className="border-b-2 border-[#E2E8F0] pb-2">
-                    <h3 className="text-xs font-black uppercase tracking-widest text-[#1A2B4C]">Export Certificate</h3>
-                    <p className="text-[10px] text-[#64748B] uppercase tracking-wider">Pick preferred output medium below</p>
-                  </div>
+
 
                   <div className="space-y-2.5" id="export-options-list">
                     {/* Download Image */}
@@ -927,32 +954,15 @@ export default function CertificateApp() {
                     </button>
                   </div>
 
-                  {/* Summary of statistics printed */}
-                  <div className="bg-[#F8FAFC] p-3 border-2 border-[#E2E8F0] rounded-sm text-xs space-y-2" id="export-summary-metrics">
-                    <p className="font-black text-[#1A2B4C] uppercase tracking-wider text-[10px] border-b border-[#E2E8F0] pb-1">Certificate Metrics</p>
-                    <div className="grid grid-cols-2 gap-2 text-[11px] font-mono text-[#64748B]">
-                      <div className="uppercase tracking-wider">Name:</div>
-                      <div className="font-bold text-[#1A2B4C] truncate text-right">{data.name}</div>
-                      <div className="uppercase tracking-wider">Duration:</div>
-                      <div className="font-bold text-[#1A2B4C] text-right">{data.duration}</div>
-                      <div className="uppercase tracking-wider">Distance:</div>
-                      <div className="font-bold text-[#1A2B4C] text-right">{data.distance} {data.distanceUnit}</div>
-                      {data.rideName && (
-                        <>
-                          <div className="uppercase tracking-wider">Event:</div>
-                          <div className="font-bold text-[#1A2B4C] truncate text-right">{data.rideName}</div>
-                        </>
-                      )}
-                    </div>
-                  </div>
+
                 </div>
 
                 {/* Back to Edit Button */}
-                <div className="pt-4 border-t border-[#E2E8F0]">
+                <div className="pt-4 ">
                   <button
                     type="button"
                     id="btn-return-edit"
-                    onClick={() => { setView('edit'); setMobileStep(2); }}
+                    onClick={() => { setView('edit'); setMobileStep(1); }}
                     className="w-full py-2.5 px-4 bg-[#F8FAFC] hover:bg-[#E2E8F0] text-[#1A2B4C] font-black text-xs uppercase tracking-widest rounded-sm border-2 border-[#E2E8F0] flex items-center justify-center gap-2 transition-colors cursor-pointer"
                   >
                     <RefreshCw className="w-3.5 h-3.5" />

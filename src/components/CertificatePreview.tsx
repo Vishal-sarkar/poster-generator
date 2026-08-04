@@ -133,7 +133,7 @@ export const CertificatePreview: React.FC<CertificatePreviewProps> = ({ data, is
     fontFamily: 'Inter, sans-serif',
   };
 
-  if (data.selectedTemplateId === 'navy-gold') {
+  if (data.selectedTemplateId === '1') {
     return (
       <div ref={containerRef} className="w-full flex items-start justify-start select-none" id="cert-preview-wrapper">
         <div style={wrapperStyle} className="transition-all duration-200">
