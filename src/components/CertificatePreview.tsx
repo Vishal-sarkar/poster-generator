@@ -8,6 +8,8 @@ import { CertificateData, TEMPLATES } from '../types';
 import { TemplateBackground, TemplateBadge } from './TemplateDesigns';
 // @ts-ignore
 import certNavyGoldBg from '../../assets/cert_navy_gold_bg.png';
+// @ts-ignore
+import certYouthDayBg from '../../assets/cert_youth_day_bg.png';
 
 const formatDate = (dateStr: string) => {
   if (!dateStr) return '';
@@ -207,6 +209,75 @@ export const CertificatePreview: React.FC<CertificatePreviewProps> = ({ data, is
               }}
             >
               <span className="text-[32px] font-bold tracking-wider font-sans" style={{ color: '#0A2540' }}>
+                {data.distance ? `${data.distance} ${data.distanceUnit}` : `0.00 ${data.distanceUnit}`}
+              </span>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (data.selectedTemplateId === '2') {
+    return (
+      <div ref={containerRef} className="w-full flex items-start justify-start select-none" id="cert-preview-wrapper">
+        <div style={wrapperStyle} className="transition-all duration-200">
+          <div style={innerStyle} className="bg-white relative shadow-none" id="certificate-print-area">
+            {/* Background Image */}
+            <div className="absolute inset-0 w-full h-full" style={{ zIndex: 0 }}>
+              <img src={certYouthDayBg} alt="Certificate Background" className="w-full h-full object-cover" />
+            </div>
+
+            {/* Recipient Name with dynamic font size */}
+            <div 
+              className="absolute left-1/2 -translate-x-1/2 text-center" 
+              style={{ 
+                top: isGenerating ? '355px' : '380px', 
+                width: '1000px', 
+                zIndex: 10 
+              }}
+            >
+              <h2 
+                className="font-bold tracking-normal leading-tight"
+                style={{
+                  ...getNameStyle(data.name || 'YOUR NAME HERE'),
+                  fontSize: `${Math.max(26, Math.min(100, 1200 / Math.max(12, (data.name || 'YOUR NAME HERE').length)))}px`,
+                  fontFamily: '"Poppins", sans-serif',
+                  fontWeight: 500,
+                  color: '#d09e3b',
+                  letterSpacing: '0.02em'
+                }}
+              >
+                {(data.name || '').trim() || 'YOUR NAME HERE'}
+              </h2>
+            </div>
+
+            {/* Duration Stat (placed above the line) */}
+            <div 
+              className="absolute text-center" 
+              style={{ 
+                left: '266px', 
+                top: isGenerating ? '640px' : '664px', 
+                width: '260px', 
+                zIndex: 10 
+              }}
+            >
+              <span className="text-[28px] font-bold tracking-normal text-[#1A2B4C]" style={{ fontFamily: '"Boston Angel", serif' }}>
+                {data.duration || '00:00:00'}
+              </span>
+            </div>
+
+            {/* Distance Stat (placed above the line) */}
+            <div 
+              className="absolute text-center" 
+              style={{ 
+                left: '858px', 
+                top: isGenerating ? '640px' : '664px', 
+                width: '260px', 
+                zIndex: 10 
+              }}
+            >
+              <span className="text-[28px] font-bold tracking-normal text-[#1A2B4C]" style={{ fontFamily: '"Boston Angel", serif' }}>
                 {data.distance ? `${data.distance} ${data.distanceUnit}` : `0.00 ${data.distanceUnit}`}
               </span>
             </div>
