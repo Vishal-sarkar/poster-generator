@@ -106,6 +106,20 @@ export const CertificatePreview: React.FC<CertificatePreviewProps> = ({ data, is
     }
   };
 
+  // Helper to format/display completed distance safely
+  const displayCompletedDistance = () => {
+    const comp = (data.completedDistance || '').trim();
+    if (!comp) {
+      return data.distance ? `${data.distance} ${data.distanceUnit}` : `0.00 ${data.distanceUnit}`;
+    }
+    
+    // If they typed units manually (e.g. "12.5 KM" or "10 Miles")
+    if (/[a-zA-Z]/.test(comp)) {
+      return comp.toUpperCase();
+    }
+    return `${comp} ${data.distanceUnit || 'KM'}`;
+  };
+
   const wrapperStyle: React.CSSProperties = isGenerating
     ? {
         width: '1414px',
@@ -209,7 +223,7 @@ export const CertificatePreview: React.FC<CertificatePreviewProps> = ({ data, is
               }}
             >
               <span className="text-[32px] font-bold tracking-wider font-sans" style={{ color: '#0A2540' }}>
-                {data.distance ? `${data.distance} ${data.distanceUnit}` : `0.00 ${data.distanceUnit}`}
+                {displayCompletedDistance()}
               </span>
             </div>
           </div>
@@ -278,7 +292,7 @@ export const CertificatePreview: React.FC<CertificatePreviewProps> = ({ data, is
               }}
             >
               <span className="text-[28px] font-bold tracking-normal text-[#1A2B4C]" style={{ fontFamily: '"Boston Angel", serif' }}>
-                {data.distance ? `${data.distance} ${data.distanceUnit}` : `0.00 ${data.distanceUnit}`}
+                {displayCompletedDistance()}
               </span>
             </div>
           </div>
@@ -378,7 +392,7 @@ export const CertificatePreview: React.FC<CertificatePreviewProps> = ({ data, is
               {/* Right Column: Distance Stat */}
               <div className="flex flex-col items-center">
                 <span className={`text-3xl font-bold tracking-wider ${template.fontLabel}`} style={{ color: template.primaryColor }}>
-                  {data.distance ? `${data.distance} ${data.distanceUnit}` : `0.00 ${data.distanceUnit}`}
+                  {displayCompletedDistance()}
                 </span>
                 <div className="w-full max-w-[180px] h-0.5 my-2" style={{ backgroundColor: template.primaryColor }} />
                 <span className="text-xs font-bold tracking-widest uppercase font-sans" style={{ color: '#94A3B8' }}>

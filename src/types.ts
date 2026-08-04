@@ -16,6 +16,7 @@ export interface CertificateData {
   signatureText: string; // The text used to draw the signature script font
   phoneNumber?: string;
   email?: string;
+  completedDistance: string;
 }
 
 export interface TemplateConfig {

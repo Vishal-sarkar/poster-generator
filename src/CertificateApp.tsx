@@ -50,6 +50,7 @@ const DEFAULT_FORM_STATE: CertificateData = {
   signatureText: 'Unique Jain',
   phoneNumber: '',
   email: '',
+  completedDistance: '',
 };
 
 interface SavedCertificate {
@@ -191,6 +192,7 @@ export default function CertificateApp() {
         signatureText: 'Unique Jain',
         phoneNumber: '9876543210',
         email: 'karan.gupta@gmail.com',
+        completedDistance: '50.00',
       });
     } else {
       setData({
@@ -206,6 +208,7 @@ export default function CertificateApp() {
         signatureText: 'M. Vance',
         phoneNumber: '9988776655',
         email: 'sarah.jenkins@gmail.com',
+        completedDistance: '100.00',
       });
     }
   };
@@ -259,6 +262,11 @@ export default function CertificateApp() {
       newErrors.distance = 'Must be a positive number';
     }
 
+    // Completed Distance
+    if (!data.completedDistance || !data.completedDistance.trim()) {
+      newErrors.completedDistance = 'Completed distance is required';
+    }
+
     return newErrors;
   }, [data]);
 
@@ -269,12 +277,14 @@ export default function CertificateApp() {
     !errors.email && 
     !errors.rideDate && 
     !errors.distance && 
+    !errors.completedDistance && 
     !errors.duration && 
     data.name.trim() !== '' && 
     data.phoneNumber?.trim() !== '' && 
     data.email?.trim() !== '' && 
     data.rideDate?.trim() !== '' && 
     data.distance.trim() !== '' && 
+    data.completedDistance.trim() !== '' && 
     data.duration.trim() !== '';
 
   const handleFieldChange = (key: keyof CertificateData, value: string) => {
@@ -383,8 +393,50 @@ export default function CertificateApp() {
     }
   };
 
+  // Upload certificate image to Cloudflare R2
+  const uploadCertificateToR2 = async (canvas: HTMLCanvasElement): Promise<string | null> => {
+    const uploadApi = import.meta.env.VITE_R2_UPLOAD_API;
+    if (!uploadApi) {
+      console.warn('VITE_R2_UPLOAD_API is not configured. Skipping certificate image Cloudflare R2 upload.');
+      return null;
+    }
+
+    try {
+      const blob = await new Promise<Blob | null>((resolve) => {
+        canvas.toBlob(resolve, 'image/png');
+      });
+
+      if (!blob) {
+        console.error('Failed to convert canvas to image blob');
+        return null;
+      }
+
+      const formData = new FormData();
+      formData.append('file', blob, `certificate_${Date.now()}.png`);
+
+      // Append type parameter so the worker creates certificates virtual directory
+      const uploadUrl = new URL(uploadApi);
+      uploadUrl.searchParams.set('type', 'certificates');
+
+      const response = await fetch(uploadUrl.toString(), {
+        method: 'POST',
+        body: formData,
+      });
+
+      if (!response.ok) {
+        throw new Error(`Upload failed with server status ${response.status}`);
+      }
+
+      const result = await response.json();
+      return result.url || null;
+    } catch (err) {
+      console.error('Error uploading certificate to R2:', err);
+      return null;
+    }
+  };
+
   // Save certificate details to Supabase database log
-  const saveDataToBackend = async () => {
+  const saveDataToBackend = async (uploadedUrl: string | null) => {
     try {
       const path = typeof window !== 'undefined' ? window.location.pathname : '';
       const certificateType = path.includes('/walk-runing') ? 'walk-running' : 'cycling';
@@ -408,12 +460,14 @@ export default function CertificateApp() {
           selected_template_id: data.selectedTemplateId,
           certificate_type: certificateType,
           event_name: eventName,
+          certificate_url: uploadedUrl,
+          completed_distance: data.completedDistance,
         })
         .select('id')
         .single();
 
       if (error) throw error;
-      console.log('Record inserted successfully! Generated ID:', record?.id);
+      console.log('Record inserted successfully!');
     } catch (err) {
       console.error('Failed to log form metrics:', err);
     }
@@ -458,9 +512,16 @@ export default function CertificateApp() {
       const imgUrl = canvas.toDataURL('image/png');
       setGeneratedImgUrl(imgUrl);
 
-      
       setToastMessage('Certificate Compiled Successfully!');
-      await saveDataToBackend();
+      
+      let uploadedUrl: string | null = null;
+      try {
+        uploadedUrl = await uploadCertificateToR2(canvas);
+      } catch (uploadErr) {
+        console.error('R2 upload failed during generate:', uploadErr);
+      }
+
+      await saveDataToBackend(uploadedUrl);
     } catch (err) {
       console.error('Error rendering HTML to Canvas:', err);
       setGeneratedImgUrl('');

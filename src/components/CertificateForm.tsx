@@ -6,7 +6,7 @@
 import React from 'react';
 import { CertificateData, TEMPLATES, TemplateConfig } from '../types';
 import { getTemplateForEvent } from '../events';
-import { Award, Timer, Navigation, Calendar, Edit3, ShieldAlert, BadgeCheck, ChevronDown, Phone, Mail } from 'lucide-react';
+import { Award, Timer, Navigation, Calendar, Edit3, ShieldAlert, BadgeCheck, ChevronDown, Phone, Mail, TrendingUp } from 'lucide-react';
 
 interface CertificateFormProps {
   data: CertificateData;
@@ -74,7 +74,50 @@ export const CertificateForm: React.FC<CertificateFormProps> = ({
     onChange('duration', formatted);
   };
 
-  const [openDropdown, setOpenDropdown] = React.useState<'hours' | 'minutes' | 'seconds' | 'target' | null>(null);
+  const [openDropdown, setOpenDropdown] = React.useState<'hours' | 'minutes' | 'seconds' | 'target' | 'date' | null>(null);
+  const [viewDate, setViewDate] = React.useState(() => data.rideDate ? new Date(data.rideDate) : new Date());
+
+  React.useEffect(() => {
+    if (data.rideDate) {
+      setViewDate(new Date(data.rideDate));
+    }
+  }, [data.rideDate]);
+
+  const getDaysInMonth = (dateDate: Date) => {
+    const year = dateDate.getFullYear();
+    const month = dateDate.getMonth();
+    const firstDay = new Date(year, month, 1);
+    const startDayOfWeek = firstDay.getDay();
+    const totalDays = new Date(year, month + 1, 0).getDate();
+    const prevMonthTotalDays = new Date(year, month, 0).getDate();
+    const days: { day: number; isCurrentMonth: boolean; dateString: string }[] = [];
+    
+    // Prev month padding
+    for (let i = startDayOfWeek - 1; i >= 0; i--) {
+      const d = prevMonthTotalDays - i;
+      const prevMonth = month === 0 ? 11 : month - 1;
+      const prevYear = month === 0 ? year - 1 : year;
+      const dateString = `${prevYear}-${String(prevMonth + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+      days.push({ day: d, isCurrentMonth: false, dateString });
+    }
+    
+    // Active month days
+    for (let d = 1; d <= totalDays; d++) {
+      const dateString = `${year}-${String(month + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+      days.push({ day: d, isCurrentMonth: true, dateString });
+    }
+    
+    // Next month padding to fill complete grid of 42 cells
+    const remaining = 42 - days.length;
+    for (let d = 1; d <= remaining; d++) {
+      const nextMonth = month === 11 ? 0 : month + 1;
+      const nextYear = month === 11 ? year + 1 : year;
+      const dateString = `${nextYear}-${String(nextMonth + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+      days.push({ day: d, isCurrentMonth: false, dateString });
+    }
+    
+    return days;
+  };
 
   const path = typeof window !== 'undefined' ? window.location.pathname : '';
   const isWalkRunning = path.includes('/walk-runing');
@@ -87,6 +130,7 @@ export const CertificateForm: React.FC<CertificateFormProps> = ({
     : 'SELECT TARGET';
 
   const isTargetOpen = openDropdown === 'target';
+  const isDateOpen = openDropdown === 'date';
 
   const renderTimePickerDropdown = (
     currentValue: number | null,
@@ -256,33 +300,127 @@ export const CertificateForm: React.FC<CertificateFormProps> = ({
         {/* Activity Date */}
         <div>
           <label htmlFor="input-ride-date" className="block text-[11px] font-bold uppercase tracking-wider text-[#64748B] mb-1.5 flex items-center gap-1">
-            <Calendar className="w-3 h-3 text-[#64748B]" /> Activity Date *
+            <Calendar className="w-3.5 h-3.5 text-[#64748B]" /> Activity Date *
           </label>
-          <div className="relative">
-            <input
-              type={data.rideDate ? "date" : "text"}
+          <div className="relative w-full">
+            <button
+              type="button"
               id="input-ride-date"
-              value={data.rideDate}
-              placeholder="DD-MM-YYYY"
-              onFocus={(e) => {
-                e.target.type = 'date';
-              }}
-              onBlur={(e) => {
-                if (!e.target.value) {
-                  e.target.type = 'text';
-                }
-              }}
-              onChange={(e) => onChange('rideDate', e.target.value)}
-              className={`w-full h-11 px-4 text-sm bg-white border-2 rounded-sm focus:outline-none transition-colors uppercase ${
-                data.rideDate ? 'text-[#1A2B4C] font-semibold' : 'text-slate-400 font-normal'
-              } ${
-                errors.rideDate ? 'border-red-500 focus:border-red-600' : 'border-[#E2E8F0] focus:border-[#1A2B4C]'
+              onClick={() => setOpenDropdown(isDateOpen ? null : 'date')}
+              className={`w-full h-11 px-4 text-sm font-semibold bg-white border-2 rounded-sm focus:outline-none flex items-center justify-between cursor-pointer select-none transition-colors ${
+                errors.rideDate ? 'border-red-500' : 'border-[#E2E8F0] focus:border-[#1A2B4C]'
               }`}
-            />
+            >
+              <span className={!data.rideDate ? 'text-slate-400 font-normal animate-fade-in' : 'text-[#1A2B4C]'}>
+                {data.rideDate
+                  ? new Date(data.rideDate).toLocaleDateString('en-US', { day: 'numeric', month: 'short', year: 'numeric' })
+                  : 'DD-MM-YYYY'}
+              </span>
+              <Calendar className="w-4 h-4 text-[#64748B]" />
+            </button>
+            
+            {isDateOpen && (
+              <>
+                {/* Backdrop to dismiss calendar on external clicks */}
+                <div 
+                  className="fixed inset-0 z-40 bg-transparent" 
+                  onClick={() => setOpenDropdown(null)} 
+                />
+                <div className="absolute left-0 right-0 top-full mt-1 bg-white border-2 border-[#1A2B4C] rounded-sm p-4 z-50 shadow-[0_4px_12px_rgba(0,0,0,0.1)] w-full">
+                  {/* Header Month/Year Selector & Navigation */}
+                  <div className="flex items-center justify-between mb-3.5">
+                    <button
+                      type="button"
+                      onClick={() => setViewDate(new Date(viewDate.getFullYear(), viewDate.getMonth() - 1, 1))}
+                      className="p-1 hover:bg-slate-100 rounded transition-colors text-[#1A2B4C] font-black text-sm select-none"
+                    >
+                      ←
+                    </button>
+                    <span className="text-xs font-black uppercase tracking-wider text-[#1A2B4C]">
+                      {viewDate.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => setViewDate(new Date(viewDate.getFullYear(), viewDate.getMonth() + 1, 1))}
+                      className="p-1 hover:bg-slate-100 rounded transition-colors text-[#1A2B4C] font-black text-sm select-none"
+                    >
+                      →
+                    </button>
+                  </div>
+
+                  {/* Weekday letters header */}
+                  <div className="grid grid-cols-7 gap-1 text-center text-[10px] font-black text-slate-400 uppercase mb-2">
+                    <span>Su</span>
+                    <span>Mo</span>
+                    <span>Tu</span>
+                    <span>We</span>
+                    <span>Th</span>
+                    <span>Fr</span>
+                    <span>Sa</span>
+                  </div>
+
+                  {/* Days grid */}
+                  <div className="grid grid-cols-7 gap-1">
+                    {getDaysInMonth(viewDate).map((cell, idx) => {
+                      const isSelected = data.rideDate === cell.dateString;
+                      const isToday = new Date().toDateString() === new Date(cell.dateString).toDateString();
+                      
+                      return (
+                        <button
+                          key={idx}
+                          type="button"
+                          onClick={() => {
+                            onChange('rideDate', cell.dateString);
+                            setOpenDropdown(null);
+                          }}
+                          className={`h-8 w-8 text-xs font-bold rounded-full transition flex items-center justify-center mx-auto cursor-pointer ${
+                            isSelected
+                              ? 'bg-[#1A2B4C] text-white hover:bg-[#1A2B4C]'
+                              : !cell.isCurrentMonth
+                              ? 'text-slate-300 hover:bg-slate-50'
+                              : isToday
+                              ? 'border-2 border-[#1A2B4C] text-[#1A2B4C] hover:bg-slate-50'
+                              : 'text-[#1A2B4C] hover:bg-slate-100'
+                          }`}
+                        >
+                          {cell.day}
+                        </button>
+                      );
+                    })}
+                  </div>
+
+                  {/* Quick selection shortcuts */}
+                  <div className="flex items-center justify-between border-t border-slate-200 pt-2.5 mt-2.5">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        onChange('rideDate', '');
+                        setOpenDropdown(null);
+                      }}
+                      className="text-[10px] font-black uppercase text-red-500 hover:text-red-700 transition"
+                    >
+                      Clear
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const todayStr = new Date().toISOString().split('T')[0];
+                        onChange('rideDate', todayStr);
+                        setViewDate(new Date());
+                        setOpenDropdown(null);
+                      }}
+                      className="text-[10px] font-black uppercase text-[#C5A059] hover:text-[#B48F48] transition"
+                    >
+                      Today
+                    </button>
+                  </div>
+                </div>
+              </>
+            )}
           </div>
           {errors.rideDate && (
             <p className="text-[10px] text-red-500 mt-1 flex items-center gap-1 font-semibold uppercase tracking-wider">
-              <ShieldAlert className="w-3 h-3" /> {errors.rideDate}
+              <ShieldAlert className="w-3.5 h-3.5" /> {errors.rideDate}
             </p>
           )}
         </div>
@@ -337,6 +475,33 @@ export const CertificateForm: React.FC<CertificateFormProps> = ({
           {errors.distance && (
             <p className="text-[10px] text-red-500 mt-1 flex items-center gap-1 font-semibold uppercase tracking-wider">
               <ShieldAlert className="w-3 h-3" /> {errors.distance}
+            </p>
+          )}
+        </div>
+
+        {/* Completed Distance */}
+        <div>
+          <label htmlFor="input-completed-distance" className="block text-[11px] font-bold uppercase tracking-wider text-[#64748B] mb-1.5 flex items-center gap-1">
+            <TrendingUp className="w-3.5 h-3.5 text-[#64748B]" /> Completed Distance *
+          </label>
+          <div className="relative flex items-center">
+            <input
+              type="text"
+              id="input-completed-distance"
+              value={data.completedDistance || ''}
+              onChange={(e) => onChange('completedDistance', e.target.value)}
+              placeholder="ENTER COMPLETED DISTANCE (e.g. 50.0)"
+              className={`w-full h-11 pl-4 pr-12 text-sm font-semibold bg-white border-2 rounded-sm focus:outline-none transition-colors ${
+                errors.completedDistance ? 'border-red-500 focus:border-red-600' : 'border-[#E2E8F0] focus:border-[#1A2B4C]'
+              }`}
+            />
+            <span className="absolute right-4 text-xs font-bold text-[#64748B] select-none pointer-events-none">
+              KM
+            </span>
+          </div>
+          {errors.completedDistance && (
+            <p className="text-[10px] text-red-500 mt-1 flex items-center gap-1 font-semibold uppercase tracking-wider">
+              <ShieldAlert className="w-3 h-3" /> {errors.completedDistance}
             </p>
           )}
         </div>
