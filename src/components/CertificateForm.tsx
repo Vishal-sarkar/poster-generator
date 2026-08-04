@@ -6,7 +6,7 @@
 import React from 'react';
 import { CertificateData, TEMPLATES, TemplateConfig } from '../types';
 import { getTemplateForEvent } from '../events';
-import { Award, Timer, Navigation, Calendar, Edit3, ShieldAlert, BadgeCheck, ChevronDown } from 'lucide-react';
+import { Award, Timer, Navigation, Calendar, Edit3, ShieldAlert, BadgeCheck, ChevronDown, Phone, Mail, TrendingUp } from 'lucide-react';
 
 interface CertificateFormProps {
   data: CertificateData;
@@ -28,20 +28,26 @@ export const CertificateForm: React.FC<CertificateFormProps> = ({
   mobileStep = 1,
 }) => {
   const parseDuration = (dur: string) => {
+    if (!dur || dur === '00:00:00') {
+      return { hours: null, minutes: null, seconds: null };
+    }
     const parts = dur.trim().split(':');
-    let h = 0;
-    let m = 0;
-    let s = 0;
+    let h = null;
+    let m = null;
+    let s = null;
     
     if (parts.length === 3) {
-      h = parseInt(parts[0], 10) || 0;
-      m = parseInt(parts[1], 10) || 0;
-      s = parseInt(parts[2], 10) || 0;
+      h = parts[0] !== '' ? parseInt(parts[0], 10) : null;
+      m = parts[1] !== '' ? parseInt(parts[1], 10) : null;
+      s = parts[2] !== '' ? parseInt(parts[2], 10) : null;
     } else if (parts.length === 2) {
-      m = parseInt(parts[0], 10) || 0;
-      s = parseInt(parts[1], 10) || 0;
+      m = parts[0] !== '' ? parseInt(parts[0], 10) : null;
+      s = parts[1] !== '' ? parseInt(parts[1], 10) : null;
+      h = null;
     } else if (parts.length === 1) {
-      s = parseInt(parts[0], 10) || 0;
+      s = parts[0] !== '' ? parseInt(parts[0], 10) : null;
+      h = null;
+      m = null;
     }
     
     return { hours: h, minutes: m, seconds: s };
@@ -56,31 +62,96 @@ export const CertificateForm: React.FC<CertificateFormProps> = ({
 
   const handleTimeChange = (type: 'h' | 'm' | 's', val: number) => {
     const current = parseDuration(data.duration);
-    if (type === 'h') current.hours = val;
-    if (type === 'm') current.minutes = val;
-    if (type === 's') current.seconds = val;
+    const h = current.hours ?? 0;
+    const m = current.minutes ?? 0;
+    const s = current.seconds ?? 0;
     
-    const formatted = formatDurationStr(current.hours, current.minutes, current.seconds);
+    const newH = type === 'h' ? val : h;
+    const newM = type === 'm' ? val : m;
+    const newS = type === 's' ? val : s;
+    
+    const formatted = formatDurationStr(newH, newM, newS);
     onChange('duration', formatted);
   };
 
-  const [openDropdown, setOpenDropdown] = React.useState<'hours' | 'minutes' | 'seconds' | null>(null);
+  const [openDropdown, setOpenDropdown] = React.useState<'hours' | 'minutes' | 'seconds' | 'target' | 'date' | null>(null);
+  const [viewDate, setViewDate] = React.useState(() => data.rideDate ? new Date(data.rideDate) : new Date());
+
+  React.useEffect(() => {
+    if (data.rideDate) {
+      setViewDate(new Date(data.rideDate));
+    }
+  }, [data.rideDate]);
+
+  const getDaysInMonth = (dateDate: Date) => {
+    const year = dateDate.getFullYear();
+    const month = dateDate.getMonth();
+    const firstDay = new Date(year, month, 1);
+    const startDayOfWeek = firstDay.getDay();
+    const totalDays = new Date(year, month + 1, 0).getDate();
+    const prevMonthTotalDays = new Date(year, month, 0).getDate();
+    const days: { day: number; isCurrentMonth: boolean; dateString: string }[] = [];
+    
+    // Prev month padding
+    for (let i = startDayOfWeek - 1; i >= 0; i--) {
+      const d = prevMonthTotalDays - i;
+      const prevMonth = month === 0 ? 11 : month - 1;
+      const prevYear = month === 0 ? year - 1 : year;
+      const dateString = `${prevYear}-${String(prevMonth + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+      days.push({ day: d, isCurrentMonth: false, dateString });
+    }
+    
+    // Active month days
+    for (let d = 1; d <= totalDays; d++) {
+      const dateString = `${year}-${String(month + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+      days.push({ day: d, isCurrentMonth: true, dateString });
+    }
+    
+    // Next month padding to fill complete grid of 42 cells
+    const remaining = 42 - days.length;
+    for (let d = 1; d <= remaining; d++) {
+      const nextMonth = month === 11 ? 0 : month + 1;
+      const nextYear = month === 11 ? year + 1 : year;
+      const dateString = `${nextYear}-${String(nextMonth + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+      days.push({ day: d, isCurrentMonth: false, dateString });
+    }
+    
+    return days;
+  };
+
+  const path = typeof window !== 'undefined' ? window.location.pathname : '';
+  const isWalkRunning = path.includes('/walk-runing');
+  const targetOptions = isWalkRunning
+    ? ['3 KM', '5 KM', '10 KM', '21 KM']
+    : ['10 KM', '25 KM', '50 KM', '100 KM'];
+
+  const currentTarget = data.distance && data.distanceUnit
+    ? `${parseFloat(data.distance)} ${data.distanceUnit}`
+    : 'SELECT TARGET';
+
+  const isTargetOpen = openDropdown === 'target';
+  const isDateOpen = openDropdown === 'date';
 
   const renderTimePickerDropdown = (
-    currentValue: number,
+    currentValue: number | null,
     type: 'h' | 'm' | 's',
     maxVal: number
   ) => {
     const dropdownType = type === 'h' ? 'hours' : type === 'm' ? 'minutes' : 'seconds';
     const isOpen = openDropdown === dropdownType;
-    const displayVal = String(currentValue).padStart(2, '0');
+    const isPlaceholder = currentValue === null;
+    const displayVal = isPlaceholder
+      ? (type === 'h' ? 'HH' : type === 'm' ? 'MM' : 'SS')
+      : String(currentValue).padStart(2, '0');
     
     return (
       <div className="flex-1 relative">
         <button
           type="button"
           onClick={() => setOpenDropdown(isOpen ? null : dropdownType)}
-          className="w-full h-11 px-3 text-xs sm:text-sm font-semibold bg-white border-2 border-[#E2E8F0] rounded-sm focus:outline-none focus:border-[#1A2B4C] flex items-center justify-between cursor-pointer select-none"
+          className={`w-full h-11 px-3 text-sm bg-white border-2 border-[#E2E8F0] rounded-sm focus:outline-none focus:border-[#1A2B4C] flex items-center justify-between cursor-pointer select-none transition-colors ${
+            isPlaceholder ? 'text-slate-400 font-normal' : 'text-[#1A2B4C] font-semibold'
+          }`}
         >
           <span>{displayVal}</span>
           <ChevronDown className={`w-3.5 h-3.5 text-[#64748B] transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`} />
@@ -146,79 +217,9 @@ export const CertificateForm: React.FC<CertificateFormProps> = ({
         </div>
       </div> */}
 
-      {/* Section 1: Template Selection (Carousel) - Hidden if event template is loaded via URL */}
-      {(() => {
-        const path = typeof window !== 'undefined' ? window.location.pathname : '';
-        const pathSegments = path.split('/').filter(Boolean);
-        const eventName = pathSegments.length > 1 ? pathSegments[1] : '';
-        const hasEventTemplate = eventName && getTemplateForEvent(eventName) !== null;
-
-        if (hasEventTemplate) return null;
-
-        return (
-          <div className={`space-y-2 ${mobileStep === 1 ? 'hidden md:block' : 'block'}`} id="template-picker-section">
-            <label className="block text-[11px] font-bold uppercase tracking-wider text-[#64748B] flex items-center gap-1">
-              <Award className="w-3.5 h-3.5 text-[#64748B]" />
-              Select Certificate Template
-            </label>
-            
-            {/* Horizontal scrollable row of custom miniatures */}
-            <div className="flex gap-3 overflow-x-auto pb-2 scroll-smooth" id="template-carousel">
-              {TEMPLATES.map((tpl) => {
-                const isSelected = data.selectedTemplateId === tpl.id;
-                return (
-                  <button
-                    key={tpl.id}
-                    type="button"
-                    id={`template-btn-${tpl.id}`}
-                    onClick={() => onChange('selectedTemplateId', tpl.id)}
-                    className={`flex-shrink-0 w-32 p-2.5 border-2 rounded-sm text-left transition-all cursor-pointer flex flex-col justify-between h-24 ${
-                      isSelected
-                        ? 'border-[#1A2B4C] bg-[#1A2B4C]/5 ring-2 ring-[#1A2B4C]/10'
-                        : 'border-[#E2E8F0] bg-white hover:border-[#64748B]'
-                    }`}
-                  >
-                    {/* Miniature preview of template layout */}
-                    <div className="w-full h-8 rounded-sm relative overflow-hidden border border-[#E2E8F0]" style={{ backgroundColor: tpl.bgColor }}>
-                      {/* Miniature Top left decorative cut */}
-                      {tpl.id === 'navy-gold' && (
-                        <>
-                          <div className="absolute top-0 left-0 w-8 h-4 bg-[#0A2540] clip-path-polygon" />
-                          <div className="absolute bottom-0 right-0 w-8 h-4 bg-[#0A2540]" />
-                        </>
-                      )}
-                      {tpl.id === 'cyber-teal' && (
-                        <div className="absolute inset-0 border border-[#38BDF8] border-dashed opacity-50" />
-                      )}
-                      {tpl.id === 'vintage-burgundy' && (
-                        <div className="absolute inset-0.5 border border-[#581C23]" />
-                      )}
-                      {tpl.id === 'modernist-yellow' && (
-                        <div className="absolute top-0 left-0 w-3 h-3 bg-[#EAB308]" />
-                      )}
-                      {/* Miniature text placeholder */}
-                      <div className="absolute inset-0 flex items-center justify-center">
-                        <span className="text-[5px] font-bold tracking-wider uppercase opacity-45">CERT</span>
-                      </div>
-                    </div>
-
-                    <div className="mt-1">
-                      <p className="text-[10px] font-bold text-[#1A2B4C] line-clamp-1 leading-tight">{tpl.name}</p>
-                      <div className="flex gap-1 mt-1">
-                        <span className="w-2.5 h-2.5 rounded-full inline-block border border-[#E2E8F0]" style={{ backgroundColor: tpl.primaryColor }} />
-                        <span className="w-2.5 h-2.5 rounded-full inline-block border border-[#E2E8F0]" style={{ backgroundColor: tpl.accentColor }} />
-                      </div>
-                    </div>
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-        );
-      })()}
 
       {/* Section 2: Core Inputs */}
-      <div className={`grid grid-cols-1 gap-4 bg-white p-4 border-2 border-[#E2E8F0] rounded-sm ${mobileStep === 2 ? 'hidden md:grid' : 'grid'}`} id="form-core-inputs">
+      <div className={`grid grid-cols-1 gap-4 bg-white  rounded-sm ${mobileStep === 2 ? 'hidden md:grid' : 'grid'}`} id="form-core-inputs">
         {/* Recipient Name */}
         <div>
           <label htmlFor="input-name" className="block text-[11px] font-bold uppercase tracking-wider text-[#64748B] mb-1.5">
@@ -231,18 +232,277 @@ export const CertificateForm: React.FC<CertificateFormProps> = ({
               maxLength={40}
               value={data.name}
               onChange={(e) => onChange('name', e.target.value.toUpperCase())} // Upper case as preferred for certificates
-              placeholder="E.G. ALEX THOMPSON"
+              placeholder="ENTER YOUR NAME"
               className={`w-full h-11 px-4 text-sm font-semibold bg-white border-2 rounded-sm focus:outline-none transition-colors ${
                 errors.name ? 'border-red-500 focus:border-red-600' : 'border-[#E2E8F0] focus:border-[#1A2B4C]'
               }`}
             />
           </div>
-          {errors.name ? (
+          {errors.name && (
             <p className="text-[10px] text-red-500 mt-1 flex items-center gap-1 font-semibold uppercase tracking-wider">
               <ShieldAlert className="w-3 h-3" /> {errors.name}
             </p>
-          ) : (
-            <p className="text-[10px] text-[#94A3B8] mt-1 uppercase tracking-wider">Will automatically scale down if too long.</p>
+          )}
+        </div>
+
+        {/* Registered phone number */}
+        <div>
+          <label htmlFor="input-phone" className="block text-[11px] font-bold uppercase tracking-wider text-[#64748B] mb-1.5 flex items-center gap-1">
+            <Phone className="w-3.5 h-3.5 text-[#64748B]" /> Registered Phone Number *
+          </label>
+          <div className="relative">
+            <input
+              type="tel"
+              id="input-phone"
+              maxLength={10}
+              value={data.phoneNumber || ''}
+              onChange={(e) => {
+                const val = e.target.value.replace(/\D/g, '');
+                onChange('phoneNumber', val);
+              }}
+              placeholder="ENTER YOUR NUMBER"
+              className={`w-full h-11 px-4 text-sm font-semibold bg-white border-2 rounded-sm focus:outline-none transition-colors ${
+                errors.phoneNumber ? 'border-red-500 focus:border-red-600' : 'border-[#E2E8F0] focus:border-[#1A2B4C]'
+              }`}
+            />
+          </div>
+          {errors.phoneNumber && (
+            <p className="text-[10px] text-red-500 mt-1 flex items-center gap-1 font-semibold uppercase tracking-wider">
+              <ShieldAlert className="w-3 h-3" /> {errors.phoneNumber}
+            </p>
+          )}
+        </div>
+
+        {/* Email */}
+        <div>
+          <label htmlFor="input-email" className="block text-[11px] font-bold uppercase tracking-wider text-[#64748B] mb-1.5 flex items-center gap-1">
+            <Mail className="w-3.5 h-3.5 text-[#64748B]" /> Email Address *
+          </label>
+          <div className="relative">
+            <input
+              type="email"
+              id="input-email"
+              value={data.email || ''}
+              onChange={(e) => onChange('email', e.target.value)}
+              placeholder="ENTER YOUR EMAIL"
+              className={`w-full h-11 px-4 text-sm font-semibold bg-white border-2 rounded-sm focus:outline-none transition-colors ${
+                errors.email ? 'border-red-500 focus:border-red-600' : 'border-[#E2E8F0] focus:border-[#1A2B4C]'
+              }`}
+            />
+          </div>
+          {errors.email && (
+            <p className="text-[10px] text-red-500 mt-1 flex items-center gap-1 font-semibold uppercase tracking-wider">
+              <ShieldAlert className="w-3 h-3" /> {errors.email}
+            </p>
+          )}
+        </div>
+
+        {/* Activity Date */}
+        <div>
+          <label htmlFor="input-ride-date" className="block text-[11px] font-bold uppercase tracking-wider text-[#64748B] mb-1.5 flex items-center gap-1">
+            <Calendar className="w-3.5 h-3.5 text-[#64748B]" /> Activity Date *
+          </label>
+          <div className="relative w-full">
+            <button
+              type="button"
+              id="input-ride-date"
+              onClick={() => setOpenDropdown(isDateOpen ? null : 'date')}
+              className={`w-full h-11 px-4 text-sm font-semibold bg-white border-2 rounded-sm focus:outline-none flex items-center justify-between cursor-pointer select-none transition-colors ${
+                errors.rideDate ? 'border-red-500' : 'border-[#E2E8F0] focus:border-[#1A2B4C]'
+              }`}
+            >
+              <span className={!data.rideDate ? 'text-slate-400 font-normal animate-fade-in' : 'text-[#1A2B4C]'}>
+                {data.rideDate
+                  ? new Date(data.rideDate).toLocaleDateString('en-US', { day: 'numeric', month: 'short', year: 'numeric' })
+                  : 'DD-MM-YYYY'}
+              </span>
+              <Calendar className="w-4 h-4 text-[#64748B]" />
+            </button>
+            
+            {isDateOpen && (
+              <>
+                {/* Backdrop to dismiss calendar on external clicks */}
+                <div 
+                  className="fixed inset-0 z-40 bg-transparent" 
+                  onClick={() => setOpenDropdown(null)} 
+                />
+                <div className="absolute left-0 right-0 top-full mt-1 bg-white border-2 border-[#1A2B4C] rounded-sm p-4 z-50 shadow-[0_4px_12px_rgba(0,0,0,0.1)] w-full">
+                  {/* Header Month/Year Selector & Navigation */}
+                  <div className="flex items-center justify-between mb-3.5">
+                    <button
+                      type="button"
+                      onClick={() => setViewDate(new Date(viewDate.getFullYear(), viewDate.getMonth() - 1, 1))}
+                      className="p-1 hover:bg-slate-100 rounded transition-colors text-[#1A2B4C] font-black text-sm select-none"
+                    >
+                      ←
+                    </button>
+                    <span className="text-xs font-black uppercase tracking-wider text-[#1A2B4C]">
+                      {viewDate.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => setViewDate(new Date(viewDate.getFullYear(), viewDate.getMonth() + 1, 1))}
+                      className="p-1 hover:bg-slate-100 rounded transition-colors text-[#1A2B4C] font-black text-sm select-none"
+                    >
+                      →
+                    </button>
+                  </div>
+
+                  {/* Weekday letters header */}
+                  <div className="grid grid-cols-7 gap-1 text-center text-[10px] font-black text-slate-400 uppercase mb-2">
+                    <span>Su</span>
+                    <span>Mo</span>
+                    <span>Tu</span>
+                    <span>We</span>
+                    <span>Th</span>
+                    <span>Fr</span>
+                    <span>Sa</span>
+                  </div>
+
+                  {/* Days grid */}
+                  <div className="grid grid-cols-7 gap-1">
+                    {getDaysInMonth(viewDate).map((cell, idx) => {
+                      const isSelected = data.rideDate === cell.dateString;
+                      const isToday = new Date().toDateString() === new Date(cell.dateString).toDateString();
+                      
+                      return (
+                        <button
+                          key={idx}
+                          type="button"
+                          onClick={() => {
+                            onChange('rideDate', cell.dateString);
+                            setOpenDropdown(null);
+                          }}
+                          className={`h-8 w-8 text-xs font-bold rounded-full transition flex items-center justify-center mx-auto cursor-pointer ${
+                            isSelected
+                              ? 'bg-[#1A2B4C] text-white hover:bg-[#1A2B4C]'
+                              : !cell.isCurrentMonth
+                              ? 'text-slate-300 hover:bg-slate-50'
+                              : isToday
+                              ? 'border-2 border-[#1A2B4C] text-[#1A2B4C] hover:bg-slate-50'
+                              : 'text-[#1A2B4C] hover:bg-slate-100'
+                          }`}
+                        >
+                          {cell.day}
+                        </button>
+                      );
+                    })}
+                  </div>
+
+                  {/* Quick selection shortcuts */}
+                  <div className="flex items-center justify-between border-t border-slate-200 pt-2.5 mt-2.5">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        onChange('rideDate', '');
+                        setOpenDropdown(null);
+                      }}
+                      className="text-[10px] font-black uppercase text-red-500 hover:text-red-700 transition"
+                    >
+                      Clear
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const todayStr = new Date().toISOString().split('T')[0];
+                        onChange('rideDate', todayStr);
+                        setViewDate(new Date());
+                        setOpenDropdown(null);
+                      }}
+                      className="text-[10px] font-black uppercase text-[#C5A059] hover:text-[#B48F48] transition"
+                    >
+                      Today
+                    </button>
+                  </div>
+                </div>
+              </>
+            )}
+          </div>
+          {errors.rideDate && (
+            <p className="text-[10px] text-red-500 mt-1 flex items-center gap-1 font-semibold uppercase tracking-wider">
+              <ShieldAlert className="w-3.5 h-3.5" /> {errors.rideDate}
+            </p>
+          )}
+        </div>
+
+        {/* Target Dropdown */}
+        <div>
+          <label className="block text-[11px] font-bold uppercase tracking-wider text-[#64748B] mb-1.5 flex items-center gap-1">
+            <Navigation className="w-3 h-3 text-[#64748B]" /> Target Distance *
+          </label>
+          <div className="relative w-full">
+            <button
+              type="button"
+              onClick={() => setOpenDropdown(isTargetOpen ? null : 'target')}
+              className={`w-full h-11 px-4 text-sm font-semibold bg-white border-2 rounded-sm focus:outline-none flex items-center justify-between cursor-pointer select-none transition-colors ${
+                errors.distance ? 'border-red-500' : 'border-[#E2E8F0] focus:border-[#1A2B4C]'
+              }`}
+            >
+              <span className={currentTarget === 'SELECT TARGET' ? 'text-slate-400 font-normal' : 'text-[#1A2B4C]'}>
+                {currentTarget}
+              </span>
+              <ChevronDown className={`w-4 h-4 text-[#64748B] transition-transform duration-200 ${isTargetOpen ? 'rotate-180' : ''}`} />
+            </button>
+            
+            {isTargetOpen && (
+              <>
+                <div className="fixed inset-0 z-40 bg-transparent" onClick={() => setOpenDropdown(null)} />
+                <div className="absolute left-0 right-0 top-full mt-1 bg-white border-2 border-[#1A2B4C] rounded-sm max-h-56 overflow-y-auto z-50 shadow-[0_4px_12px_rgba(0,0,0,0.1)]">
+                  {targetOptions.map((opt) => {
+                    const isSelected = currentTarget === opt;
+                    return (
+                      <button
+                        key={opt}
+                        type="button"
+                        onClick={() => {
+                          onChange('distance', opt);
+                          setOpenDropdown(null);
+                        }}
+                        className={`w-full px-4 py-2.5 text-left text-xs font-bold transition-colors flex items-center justify-between uppercase ${
+                          isSelected 
+                            ? 'bg-[#1A2B4C] text-white' 
+                            : 'text-[#1A2B4C] hover:bg-[#F8FAFC]'
+                        }`}
+                      >
+                        <span>{opt}</span>
+                      </button>
+                    );
+                  })}
+                </div>
+              </>
+            )}
+          </div>
+          {errors.distance && (
+            <p className="text-[10px] text-red-500 mt-1 flex items-center gap-1 font-semibold uppercase tracking-wider">
+              <ShieldAlert className="w-3 h-3" /> {errors.distance}
+            </p>
+          )}
+        </div>
+
+        {/* Completed Distance */}
+        <div>
+          <label htmlFor="input-completed-distance" className="block text-[11px] font-bold uppercase tracking-wider text-[#64748B] mb-1.5 flex items-center gap-1">
+            <TrendingUp className="w-3.5 h-3.5 text-[#64748B]" /> Completed Distance *
+          </label>
+          <div className="relative flex items-center">
+            <input
+              type="text"
+              id="input-completed-distance"
+              value={data.completedDistance || ''}
+              onChange={(e) => onChange('completedDistance', e.target.value)}
+              placeholder="ENTER COMPLETED DISTANCE (e.g. 50.0)"
+              className={`w-full h-11 pl-4 pr-12 text-sm font-semibold bg-white border-2 rounded-sm focus:outline-none transition-colors ${
+                errors.completedDistance ? 'border-red-500 focus:border-red-600' : 'border-[#E2E8F0] focus:border-[#1A2B4C]'
+              }`}
+            />
+            <span className="absolute right-4 text-xs font-bold text-[#64748B] select-none pointer-events-none">
+              KM
+            </span>
+          </div>
+          {errors.completedDistance && (
+            <p className="text-[10px] text-red-500 mt-1 flex items-center gap-1 font-semibold uppercase tracking-wider">
+              <ShieldAlert className="w-3 h-3" /> {errors.completedDistance}
+            </p>
           )}
         </div>
 
@@ -255,71 +515,23 @@ export const CertificateForm: React.FC<CertificateFormProps> = ({
             {/* Hours */}
             {renderTimePickerDropdown(hours, 'h', 100)}
 
-            <span className="text-[#1A2B4C] font-black text-xs sm:text-sm">:</span>
+            <span className="text-[#1A2B4C] font-semibold text-sm">:</span>
 
             {/* Minutes */}
             {renderTimePickerDropdown(minutes, 'm', 60)}
 
-            <span className="text-[#1A2B4C] font-black text-xs sm:text-sm">:</span>
+            <span className="text-[#1A2B4C] font-semibold text-sm">:</span>
 
             {/* Seconds */}
             {renderTimePickerDropdown(seconds, 's', 60)}
           </div>
-          {errors.duration ? (
+          {errors.duration && (
             <p className="text-[10px] text-red-500 mt-1 leading-tight flex items-center gap-1 font-semibold uppercase tracking-wider">
               <ShieldAlert className="w-3 h-3 flex-shrink-0" /> {errors.duration}
             </p>
-          ) : (
-            <div className="flex justify-between text-[9px] text-[#94A3B8] mt-1 uppercase tracking-wider font-mono">
-              <span>Hours</span>
-              <span>Mins</span>
-              <span>Secs</span>
-            </div>
           )}
         </div>
-
-        {/* Distance */}
-        <div className="mt-2">
-          <label htmlFor="input-distance" className="block text-[11px] font-bold uppercase tracking-wider text-[#64748B] mb-1.5 flex items-center gap-1">
-            <Navigation className="w-3 h-3 text-[#64748B]" /> Distance *
-          </label>
-          <div className="flex">
-            <input
-              type="text"
-              id="input-distance"
-              value={data.distance}
-              onChange={(e) => {
-                let val = e.target.value;
-                // Allow only digits and up to one decimal point
-                val = val.replace(/[^0-9.]/g, '');
-                // Prevent multiple decimals
-                const parts = val.split('.');
-                if (parts.length > 2) {
-                  val = parts[0] + '.' + parts.slice(1).join('');
-                }
-                onChange('distance', val);
-              }}
-              placeholder="45.00"
-              className={`flex-1 min-w-0 h-11 px-4 text-sm font-semibold bg-white border-l-2 border-y-2 rounded-l-sm focus:outline-none transition-colors ${
-                errors.distance ? 'border-red-500 focus:border-red-600' : 'border-[#E2E8F0] focus:border-[#1A2B4C]'
-              }`}
-            />
-            <span
-              id="select-unit"
-              className="px-4 h-11 flex items-center justify-center text-xs font-black uppercase bg-[#F8FAFC] border-2 border-[#E2E8F0] rounded-r-sm border-l-0 text-[#1A2B4C] select-none"
-            >
-              KM
-            </span>
-          </div>
-            {errors.distance ? (
-              <p className="text-[10px] text-red-500 mt-1 flex items-center gap-1 font-semibold uppercase tracking-wider">
-                <ShieldAlert className="w-3 h-3" /> {errors.distance}
-              </p>
-            ) : (
-              <p className="text-[10px] text-[#94A3B8] mt-1 uppercase tracking-wider">Positive number</p>
-            )}
-          </div>
-        </div>
+      </div>
 
       {/* Section 3: Ride Details & Custom Date (Optional) */}
       {/* <div className={`bg-white p-4 border-2 border-[#E2E8F0] rounded-sm space-y-3.5 ${mobileStep === 2 ? 'hidden md:block' : 'block'}`} id="form-optional-inputs">

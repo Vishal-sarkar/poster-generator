@@ -38,8 +38,11 @@ import runWalkBg from '../assets/run_walk_bg.jpg';
 // @ts-ignore
 import halftoneCircle from '../assets/halftone_circle.png';
 import CertificateApp from './CertificateApp';
+import DashboardApp from './DashboardApp';
 // @ts-ignore
 import baackgroundimg from '../assets/baackgroundimg.png';
+// @ts-ignore
+import independenceDayBg from '../assets/independence_day_bg.jpg';
 
 
 interface DropdownProps {
@@ -324,6 +327,7 @@ function PosterGenerator() {
   const [loadedRunWalkBg, setLoadedRunWalkBg] = useState<HTMLImageElement | null>(null);
   const [loadedHalftone, setLoadedHalftone] = useState<HTMLImageElement | null>(null);
   const [loadedYouthDayBg, setLoadedYouthDayBg] = useState<HTMLImageElement | null>(null);
+  const [loadedIndependenceDayBg, setLoadedIndependenceDayBg] = useState<HTMLImageElement | null>(null);
 
   useEffect(() => {
     const img = new Image();
@@ -349,6 +353,12 @@ function PosterGenerator() {
     img4.onload = () => {
       setLoadedYouthDayBg(img4);
     };
+
+    const img5 = new Image();
+    img5.src = independenceDayBg;
+    img5.onload = () => {
+      setLoadedIndependenceDayBg(img5);
+    };
   }, []);
 
   // Primary unified form state
@@ -356,13 +366,16 @@ function PosterGenerator() {
     const path = typeof window !== 'undefined' ? window.location.pathname : '';
     const isWalkRunning = path.includes('/walk-runing');
     const search = typeof window !== 'undefined' ? window.location.search : '';
-    const isYouthDay = new URLSearchParams(search).get('event') === 'youth-day';
+    const eventParam = new URLSearchParams(search).get('event');
+    const isYouthDay = eventParam === 'youth-day';
+    const isIndependenceDay = eventParam === 'independence-day';
+    
     return {
       name: '',
       date: '2026-01-26',
       target: 'Select Target',
       photoUrl: null,
-      templateId: isYouthDay ? 'youth-day' : 'cycling-challenge',
+      templateId: isIndependenceDay ? 'independence-day' : isYouthDay ? 'youth-day' : 'cycling-challenge',
       photoX: 0,
       photoY: 0,
       photoScale: 1.0,
@@ -436,10 +449,19 @@ function PosterGenerator() {
     const handlePopState = () => {
       const path = window.location.pathname;
       const isWalkRunning = path.includes('/walk-runing');
-      const isYouthDay = new URLSearchParams(window.location.search).get('event') === 'youth-day';
+      const search = window.location.search;
+      const eventParam = new URLSearchParams(search).get('event');
+      const isYouthDay = eventParam === 'youth-day';
+      const isIndependenceDay = eventParam === 'independence-day';
+      
       setState(prev => {
         const nextRoute = isWalkRunning ? 'walk-runing' as const : 'cycling' as const;
-        const nextTemplateId = isYouthDay ? 'youth-day' : (prev.templateId === 'youth-day' ? 'cycling-challenge' : prev.templateId);
+        const nextTemplateId = isIndependenceDay 
+          ? 'independence-day' 
+          : isYouthDay 
+          ? 'youth-day' 
+          : (prev.templateId === 'youth-day' || prev.templateId === 'independence-day' ? 'cycling-challenge' : prev.templateId);
+        
         if (prev.activityRoute !== nextRoute || prev.templateId !== nextTemplateId) {
           return {
             ...prev,
@@ -457,12 +479,12 @@ function PosterGenerator() {
   // Redraw both canvases instantly when state, loadedPhoto, dragging state, or step/view state changes
   useEffect(() => {
     if (desktopCanvasRef.current) {
-      renderPoster(desktopCanvasRef.current, state, loadedPhoto, loadedCyclingBg, loadedRunWalkBg, isDragging, loadedHalftone, loadedYouthDayBg);
+      renderPoster(desktopCanvasRef.current, state, loadedPhoto, loadedCyclingBg, loadedRunWalkBg, isDragging, loadedHalftone, loadedYouthDayBg, loadedIndependenceDayBg);
     }
     if (mobileCanvasRef.current) {
-      renderPoster(mobileCanvasRef.current, state, loadedPhoto, loadedCyclingBg, loadedRunWalkBg, isDragging, loadedHalftone, loadedYouthDayBg);
+      renderPoster(mobileCanvasRef.current, state, loadedPhoto, loadedCyclingBg, loadedRunWalkBg, isDragging, loadedHalftone, loadedYouthDayBg, loadedIndependenceDayBg);
     }
-  }, [state, loadedPhoto, loadedCyclingBg, loadedRunWalkBg, isDragging, mobileStep, isGenerated, loadedHalftone, loadedYouthDayBg]);
+  }, [state, loadedPhoto, loadedCyclingBg, loadedRunWalkBg, isDragging, mobileStep, isGenerated, loadedHalftone, loadedYouthDayBg, loadedIndependenceDayBg]);
 
   // Hook scroll wheel zooming directly onto canvases to prevent page-level scrolling
   useEffect(() => {
@@ -996,7 +1018,7 @@ function PosterGenerator() {
           </section>
 
           {/* Card 3: Design Template Variants */}
-          {state.templateId !== 'youth-day' && (
+          {state.templateId !== 'youth-day' && state.templateId !== 'independence-day' && (
             <section className="uber-card p-6 flex flex-col space-y-4">
               <div className="flex items-center space-x-2 border-b border-slate-200 pb-3">
                 <Sliders className="w-5 h-5 text-neutral-900" />
@@ -1321,7 +1343,7 @@ function PosterGenerator() {
               </div>
 
               {/* Template selector carousel */}
-              {state.templateId !== 'youth-day' && (
+              {state.templateId !== 'youth-day' && state.templateId !== 'independence-day' && (
                 <div className="flex flex-col space-y-1.5">
                   <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Select Poster Template Style</span>
                   <div className="flex space-x-3 overflow-x-auto pb-1 px-1 scroll-smooth snap-x">
@@ -1447,7 +1469,12 @@ export default function App() {
     return () => window.removeEventListener('popstate', handlePopState);
   }, []);
 
+  const isDashboardRoute = path.includes('/dashboard');
   const isCertificateRoute = path.includes('/certificate') || path.includes('/certificates');
+
+  if (isDashboardRoute) {
+    return <DashboardApp />;
+  }
 
   if (isCertificateRoute) {
     return <CertificateApp />;

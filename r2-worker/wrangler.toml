@@ -1,0 +1,9 @@
+name = "pedals-power-r2-upload"
+main = "src/index.ts"
+compatibility_date = "2024-01-01"
+
+# Bind Cloudflare R2 bucket
+[[r2_buckets]]
+binding = "MY_BUCKET"
+bucket_name = "pedals-power-certificates"
+preview_bucket_name = "pedals-power-certificates-preview"

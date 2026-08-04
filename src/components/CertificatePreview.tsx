@@ -8,6 +8,34 @@ import { CertificateData, TEMPLATES } from '../types';
 import { TemplateBackground, TemplateBadge } from './TemplateDesigns';
 // @ts-ignore
 import certNavyGoldBg from '../../assets/cert_navy_gold_bg.png';
+// @ts-ignore
+import certYouthDayBg from '../../assets/cert_youth_day_bg.png';
+
+const formatDate = (dateStr: string) => {
+  if (!dateStr) return '';
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) {
+    return dateStr;
+  }
+  const [year, month, day] = dateStr.split('-').map(Number);
+  const date = new Date(year, month - 1, day);
+  if (isNaN(date.getTime())) return dateStr;
+
+  const dayNum = date.getDate();
+  const monthName = date.toLocaleString('en-US', { month: 'long' });
+  const fullYear = date.getFullYear();
+
+  const suffix = (d: number) => {
+    if (d > 3 && d < 21) return 'th';
+    switch (d % 10) {
+      case 1:  return "st";
+      case 2:  return "nd";
+      case 3:  return "rd";
+      default: return "th";
+    }
+  };
+
+  return `${dayNum}${suffix(dayNum)} ${monthName} ${fullYear}`;
+};
 
 interface CertificatePreviewProps {
   data: CertificateData;
@@ -68,14 +96,28 @@ export const CertificatePreview: React.FC<CertificatePreviewProps> = ({ data, is
     const hasDate = data.rideDate.trim().length > 0;
 
     if (hasRide && hasDate) {
-      return `For successfully completing ${data.rideName.trim()} on ${data.rideDate.trim()}`;
+      return `For successfully completing ${data.rideName.trim()} on ${formatDate(data.rideDate.trim())}`;
     } else if (hasRide) {
       return `For successfully completing ${data.rideName.trim()}`;
     } else if (hasDate) {
-      return `For successfully completing the achievement challenge on ${data.rideDate.trim()}`;
+      return `For successfully completing the achievement challenge on ${formatDate(data.rideDate.trim())}`;
     } else {
       return 'For successfully completing the achievement challenge';
     }
+  };
+
+  // Helper to format/display completed distance safely
+  const displayCompletedDistance = () => {
+    const comp = (data.completedDistance || '').trim();
+    if (!comp) {
+      return data.distance ? `${data.distance} ${data.distanceUnit}` : `0.00 ${data.distanceUnit}`;
+    }
+    
+    // If they typed units manually (e.g. "12.5 KM" or "10 Miles")
+    if (/[a-zA-Z]/.test(comp)) {
+      return comp.toUpperCase();
+    }
+    return `${comp} ${data.distanceUnit || 'KM'}`;
   };
 
   const wrapperStyle: React.CSSProperties = isGenerating
@@ -107,7 +149,7 @@ export const CertificatePreview: React.FC<CertificatePreviewProps> = ({ data, is
     fontFamily: 'Inter, sans-serif',
   };
 
-  if (data.selectedTemplateId === 'navy-gold') {
+  if (data.selectedTemplateId === '1') {
     return (
       <div ref={containerRef} className="w-full flex items-start justify-start select-none" id="cert-preview-wrapper">
         <div style={wrapperStyle} className="transition-all duration-200">
@@ -152,7 +194,7 @@ export const CertificatePreview: React.FC<CertificatePreviewProps> = ({ data, is
                 fontWeight: 500
               }}
             >
-              For successfully completing {(data.rideName || 'World Bicycle Day Virtual Challenge 2026').trim()} held on {(data.rideDate || '13th July 2026').trim()}
+              For successfully completing {(data.rideName || 'World Bicycle Day Virtual Challenge 2026').trim()} held on {formatDate(data.rideDate || '13th July 2026').trim()}
             </div>
 
             {/* Duration Stat (placed above the line) */}
@@ -181,7 +223,76 @@ export const CertificatePreview: React.FC<CertificatePreviewProps> = ({ data, is
               }}
             >
               <span className="text-[32px] font-bold tracking-wider font-sans" style={{ color: '#0A2540' }}>
-                {data.distance ? `${data.distance} ${data.distanceUnit}` : `0.00 ${data.distanceUnit}`}
+                {displayCompletedDistance()}
+              </span>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (data.selectedTemplateId === '2') {
+    return (
+      <div ref={containerRef} className="w-full flex items-start justify-start select-none" id="cert-preview-wrapper">
+        <div style={wrapperStyle} className="transition-all duration-200">
+          <div style={innerStyle} className="bg-white relative shadow-none" id="certificate-print-area">
+            {/* Background Image */}
+            <div className="absolute inset-0 w-full h-full" style={{ zIndex: 0 }}>
+              <img src={certYouthDayBg} alt="Certificate Background" className="w-full h-full object-cover" />
+            </div>
+
+            {/* Recipient Name with dynamic font size */}
+            <div 
+              className="absolute left-1/2 -translate-x-1/2 text-center" 
+              style={{ 
+                top: isGenerating ? '355px' : '380px', 
+                width: '1000px', 
+                zIndex: 10 
+              }}
+            >
+              <h2 
+                className="font-bold tracking-normal leading-tight"
+                style={{
+                  ...getNameStyle(data.name || 'YOUR NAME HERE'),
+                  fontSize: `${Math.max(26, Math.min(100, 1200 / Math.max(12, (data.name || 'YOUR NAME HERE').length)))}px`,
+                  fontFamily: '"Poppins", sans-serif',
+                  fontWeight: 500,
+                  color: '#d09e3b',
+                  letterSpacing: '0.02em'
+                }}
+              >
+                {(data.name || '').trim() || 'YOUR NAME HERE'}
+              </h2>
+            </div>
+
+            {/* Duration Stat (placed above the line) */}
+            <div 
+              className="absolute text-center" 
+              style={{ 
+                left: '266px', 
+                top: isGenerating ? '640px' : '664px', 
+                width: '260px', 
+                zIndex: 10 
+              }}
+            >
+              <span className="text-[28px] font-bold tracking-normal text-[#1A2B4C]" style={{ fontFamily: '"Boston Angel", serif' }}>
+                {data.duration || '00:00:00'}
+              </span>
+            </div>
+
+            {/* Distance Stat (placed above the line) */}
+            <div 
+              className="absolute text-center" 
+              style={{ 
+                left: '858px', 
+                top: isGenerating ? '640px' : '664px', 
+                width: '260px', 
+                zIndex: 10 
+              }}
+            >
+              <span className="text-[28px] font-bold tracking-normal text-[#1A2B4C]" style={{ fontFamily: '"Boston Angel", serif' }}>
+                {displayCompletedDistance()}
               </span>
             </div>
           </div>
@@ -281,7 +392,7 @@ export const CertificatePreview: React.FC<CertificatePreviewProps> = ({ data, is
               {/* Right Column: Distance Stat */}
               <div className="flex flex-col items-center">
                 <span className={`text-3xl font-bold tracking-wider ${template.fontLabel}`} style={{ color: template.primaryColor }}>
-                  {data.distance ? `${data.distance} ${data.distanceUnit}` : `0.00 ${data.distanceUnit}`}
+                  {displayCompletedDistance()}
                 </span>
                 <div className="w-full max-w-[180px] h-0.5 my-2" style={{ backgroundColor: template.primaryColor }} />
                 <span className="text-xs font-bold tracking-widest uppercase font-sans" style={{ color: '#94A3B8' }}>
