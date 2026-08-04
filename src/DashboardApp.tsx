@@ -79,7 +79,7 @@ export default function DashboardApp() {
       const { data: userData, error } = await supabase
         .from('dashboard_users')
         .select('id')
-        .eq('username', username.trim())
+        .eq('username', username.trim().toLowerCase())
         .eq('password', password)
         .maybeSingle();
 
@@ -196,10 +196,10 @@ export default function DashboardApp() {
                 <input
                   type="text"
                   required
-                  placeholder="ENTER USERNAME"
+                  placeholder="enter username"
                   value={username}
                   onChange={(e) => setUsername(e.target.value)}
-                  className="w-full h-11 px-4 text-sm font-semibold bg-white border-2 border-[#E2E8F0] focus:border-[#1A2B4C] rounded-sm focus:outline-none transition-colors uppercase placeholder:text-slate-400 placeholder:font-normal"
+                  className="w-full h-11 px-4 text-sm font-semibold bg-white border-2 border-[#E2E8F0] focus:border-[#1A2B4C] rounded-sm focus:outline-none transition-colors placeholder:text-slate-400 placeholder:font-normal"
                 />
               </div>
             </div>
@@ -212,10 +212,10 @@ export default function DashboardApp() {
                 <input
                   type="password"
                   required
-                  placeholder="ENTER PASSWORD"
+                  placeholder="enter password"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  className="w-full h-11 px-4 text-sm font-semibold bg-white border-2 border-[#E2E8F0] focus:border-[#1A2B4C] rounded-sm focus:outline-none transition-colors uppercase placeholder:text-slate-400 placeholder:font-normal"
+                  className="w-full h-11 px-4 text-sm font-semibold bg-white border-2 border-[#E2E8F0] focus:border-[#1A2B4C] rounded-sm focus:outline-none transition-colors placeholder:text-slate-400 placeholder:font-normal"
                 />
               </div>
             </div>
