@@ -37,16 +37,18 @@ import { jsPDF } from 'jspdf';
 
 // Initial state for certificate input
 const DEFAULT_FORM_STATE: CertificateData = {
-  name: 'KARAN GUPTA',
-  duration: '04:10:00',
-  distance: '45.00',
-  distanceUnit: 'KM',
-  rideName: 'Morning City Ride',
-  rideDate: '13th July 2026',
+  name: '',
+  duration: '',
+  distance: '',
+  distanceUnit: '',
+  rideName: '',
+  rideDate: '',
   selectedTemplateId: 'navy-gold',
   signatureName: 'Unique Jain',
   signatureRole: 'Founder & CEO',
   signatureText: 'Unique Jain',
+  phoneNumber: '',
+  email: '',
 };
 
 interface SavedCertificate {
@@ -61,12 +63,12 @@ interface SavedCertificate {
 
 export default function CertificateApp() {
   const [data, setData] = useState<CertificateData>(() => {
-    const saved = localStorage.getItem('current_cert_draft');
-    const initialData = saved ? JSON.parse(saved) : DEFAULT_FORM_STATE;
+    const initialData = DEFAULT_FORM_STATE;
 
     const path = typeof window !== 'undefined' ? window.location.pathname : '';
     const pathSegments = path.split('/').filter(Boolean);
-    const eventName = pathSegments.length > 1 ? pathSegments[1] : '';
+    const eventSegment = pathSegments.find(segment => getTemplateForEvent(segment) !== null);
+    const eventName = eventSegment || '';
     if (eventName) {
       const template = getTemplateForEvent(eventName);
       if (template) {
@@ -88,11 +90,9 @@ export default function CertificateApp() {
   const [showSuccessToast, setShowSuccessToast] = useState(false);
   const [toastMessage, setToastMessage] = useState('Certificate Compiled Successfully!');
   const [mobileStep, setMobileStep] = useState<number>(1);
+  const [showErrors, setShowErrors] = useState(false);
 
-  // Auto-save draft on data changes
-  useEffect(() => {
-    localStorage.setItem('current_cert_draft', JSON.stringify(data));
-  }, [data]);
+
 
   // Load Certificate History from localStorage on mount
   useEffect(() => {
@@ -106,26 +106,52 @@ export default function CertificateApp() {
     }
   }, []);
 
-  // Load event-specific template from URL path on mount/popstate
+  // Load event-specific template and sync target from URL path on mount/popstate
   useEffect(() => {
     const syncTemplateFromPath = () => {
       const path = typeof window !== 'undefined' ? window.location.pathname : '';
       const pathSegments = path.split('/').filter(Boolean);
-      const eventName = pathSegments.length > 1 ? pathSegments[1] : '';
-      if (eventName) {
-        const template = getTemplateForEvent(eventName);
-        if (template) {
-          setData(prev => {
-            if (prev.selectedTemplateId !== template.id) {
-              return {
-                ...prev,
-                selectedTemplateId: template.id
-              };
-            }
-            return prev;
-          });
+      const eventSegment = pathSegments.find(segment => getTemplateForEvent(segment) !== null);
+      const eventName = eventSegment || '';
+
+      setData(prev => {
+        let nextTemplateId = prev.selectedTemplateId;
+        if (eventName) {
+          const template = getTemplateForEvent(eventName);
+          if (template) {
+            nextTemplateId = template.id;
+          }
         }
-      }
+
+        const isWalkRunning = path.includes('/walk-runing');
+        const targetString = `${parseFloat(prev.distance)} ${prev.distanceUnit}`;
+        let nextDistance = prev.distance;
+        let nextDistanceUnit = prev.distanceUnit;
+
+        if (prev.distance && prev.distanceUnit) {
+          if (isWalkRunning) {
+            if (!['3 KM', '5 KM', '10 KM', '21 KM'].includes(targetString)) {
+              nextDistance = '5.00';
+              nextDistanceUnit = 'KM';
+            }
+          } else {
+            if (!['10 KM', '25 KM', '50 KM', '100 KM'].includes(targetString)) {
+              nextDistance = '100.00';
+              nextDistanceUnit = 'KM';
+            }
+          }
+        }
+
+        if (prev.selectedTemplateId !== nextTemplateId || prev.distance !== nextDistance || prev.distanceUnit !== nextDistanceUnit) {
+          return {
+            ...prev,
+            selectedTemplateId: nextTemplateId,
+            distance: nextDistance,
+            distanceUnit: nextDistanceUnit
+          };
+        }
+        return prev;
+      });
     };
 
     syncTemplateFromPath();
@@ -139,14 +165,16 @@ export default function CertificateApp() {
       setData({
         name: 'KARAN GUPTA',
         duration: '04:10:00',
-        distance: '45.00',
+        distance: '50.00',
         distanceUnit: 'KM',
         rideName: 'Morning City Ride',
-        rideDate: '13th July 2026',
+        rideDate: '2026-07-13',
         selectedTemplateId: 'navy-gold',
         signatureName: 'Unique Jain',
         signatureRole: 'Founder & CEO',
         signatureText: 'Unique Jain',
+        phoneNumber: '9876543210',
+        email: 'karan.gupta@gmail.com',
       });
     } else {
       setData({
@@ -155,11 +183,13 @@ export default function CertificateApp() {
         distance: '100.00',
         distanceUnit: 'KM',
         rideName: 'Epic Alpine Century',
-        rideDate: '18th July 2026',
+        rideDate: '2026-07-18',
         selectedTemplateId: 'cyber-teal',
         signatureName: 'Marcus Vance',
         signatureRole: 'Race Director',
         signatureText: 'M. Vance',
+        phoneNumber: '9988776655',
+        email: 'sarah.jenkins@gmail.com',
       });
     }
   };
@@ -175,6 +205,25 @@ export default function CertificateApp() {
       newErrors.name = 'Name must be at least 2 characters';
     }
 
+    // Phone Number Validation
+    if (!data.phoneNumber || !data.phoneNumber.trim()) {
+      newErrors.phoneNumber = 'Phone number is required';
+    } else if (!/^\d{10}$/.test(data.phoneNumber.trim())) {
+      newErrors.phoneNumber = 'Must be a 10-digit number';
+    }
+
+    // Email Validation
+    if (!data.email || !data.email.trim()) {
+      newErrors.email = 'Email is required';
+    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(data.email.trim())) {
+      newErrors.email = 'Invalid email address';
+    }
+
+    // Activity Date Validation
+    if (!data.rideDate || !data.rideDate.trim()) {
+      newErrors.rideDate = 'Activity date is required';
+    }
+
     // Duration: Validates HH:MM:SS, H:MM:SS, MM:SS
     const durationTrim = data.duration.trim();
     if (!durationTrim) {
@@ -188,7 +237,7 @@ export default function CertificateApp() {
 
     // Distance
     const distNum = parseFloat(data.distance);
-    if (!data.distance.trim()) {
+    if (!data.distance || !data.distance.trim()) {
       newErrors.distance = 'Distance is required';
     } else if (isNaN(distNum) || distNum <= 0) {
       newErrors.distance = 'Must be a positive number';
@@ -198,13 +247,34 @@ export default function CertificateApp() {
   }, [data]);
 
   const isValid = Object.keys(errors).length === 0;
-  const isStep1Valid = !errors.name && !errors.duration && !errors.distance && data.name.trim() !== '' && data.duration.trim() !== '' && data.distance.trim() !== '';
+  const isStep1Valid = 
+    !errors.name && 
+    !errors.phoneNumber && 
+    !errors.email && 
+    !errors.rideDate && 
+    !errors.distance && 
+    !errors.duration && 
+    data.name.trim() !== '' && 
+    data.phoneNumber?.trim() !== '' && 
+    data.email?.trim() !== '' && 
+    data.rideDate?.trim() !== '' && 
+    data.distance.trim() !== '' && 
+    data.duration.trim() !== '';
 
   const handleFieldChange = (key: keyof CertificateData, value: string) => {
-    setData((prev) => ({
-      ...prev,
-      [key]: value,
-    }));
+    if (key === 'distance' && value.includes(' ')) {
+      const [dist, unit] = value.split(' ');
+      setData((prev) => ({
+        ...prev,
+        distance: dist,
+        distanceUnit: unit,
+      }));
+    } else {
+      setData((prev) => ({
+        ...prev,
+        [key]: value,
+      }));
+    }
   };
 
   // Temporarily sanitize stylesheets to remove oklch which crashes html2canvas
@@ -299,7 +369,10 @@ export default function CertificateApp() {
 
   // Compile / Generate Certificate
   const handleGenerateCertificate = async () => {
-    if (!isValid) return;
+    if (!isValid) {
+      setShowErrors(true);
+      return;
+    }
 
     setIsGenerating(true);
     setToastMessage('Compiling Certificate...');
@@ -591,22 +664,6 @@ export default function CertificateApp() {
         </div>
 
         <div className="flex items-center gap-2">
-          {history.length > 0 && (
-            <button
-              type="button"
-              id="btn-history-toggle"
-              onClick={() => setShowHistoryDrawer(true)}
-              className="px-3 py-1.5 text-xs font-bold bg-[#F8FAFC] hover:bg-[#E2E8F0] text-[#1A2B4C] border-2 border-[#E2E8F0] rounded-sm flex items-center gap-1.5 cursor-pointer transition-colors uppercase tracking-wider"
-            >
-              <History className="w-3.5 h-3.5" />
-              <span className="hidden sm:inline">Saved Logs</span>
-              <span className="bg-[#1A2B4C] text-white text-[9px] px-1.5 py-0.5 rounded-sm">{history.length}</span>
-            </button>
-          )}
-          
-          {/* <span className="text-xs px-2.5 py-1 rounded-sm bg-[#F8FAFC] text-[#64748B] font-mono font-bold uppercase border border-[#E2E8F0]">
-            v1.1
-          </span> */}
         </div>
       </header>
 
@@ -638,27 +695,13 @@ export default function CertificateApp() {
               </div>
 
               {/* Left Panel: Form Customizer */}
-              <div className={`col-span-12 md:col-span-5 bg-white p-4 border-b-2 md:border-2 border-[#E2E8F0] md:rounded-sm flex flex-col space-y-4 md:overflow-y-auto md:max-h-[calc(100vh-120px)] ${mobileStep === 2 ? 'order-2' : 'order-1'}`} id="editor-left-panel">
-                <div className="flex items-center justify-between border-b-2 border-[#E2E8F0] pb-2">
-                  <h2 className="text-xs font-black uppercase tracking-widest text-[#1A2B4C] flex items-center gap-1.5">
-                    <Sliders className="w-4 h-4 text-[#64748B]" />
-                    Customize Certificate
-                  </h2>
-                  <button
-                    type="button"
-                    onClick={() => loadDemo('morning')}
-                    className="text-[10px] text-[#64748B] hover:text-[#1A2B4C] font-bold uppercase underline"
-                  >
-                    Reset Form
-                  </button>
-                </div>
-
+              <div className={`col-span-12 md:col-span-5 bg-white p-4  md:border-2 border-[#E2E8F0] md:rounded-sm flex flex-col space-y-4 md:overflow-y-auto md:max-h-[calc(100vh-120px)] ${mobileStep === 2 ? 'order-2' : 'order-1'}`} id="editor-left-panel">
                 {/* React form component with inline template picker */}
                 <CertificateForm
                   data={data}
                   onChange={handleFieldChange}
                   isValid={isValid}
-                  errors={errors}
+                  errors={showErrors ? errors : {}}
                   onGenerate={handleGenerateCertificate}
                   loadDemo={loadDemo}
                   mobileStep={mobileStep}
@@ -670,11 +713,11 @@ export default function CertificateApp() {
                     type="button"
                     id="btn-generate-desktop"
                     onClick={handleGenerateCertificate}
-                    disabled={!isValid || isGenerating}
+                    disabled={isGenerating}
                     className={`w-full py-3.5 px-4 font-black uppercase tracking-widest text-sm rounded-sm border-2 transition-colors duration-150 cursor-pointer text-center flex items-center justify-center gap-2 ${
-                      isValid && !isGenerating
-                        ? 'bg-[#1A2B4C] text-white border-[#1A2B4C] hover:bg-[#2D4263]'
-                        : 'bg-[#F8FAFC] text-[#94A3B8] border-[#E2E8F0] cursor-not-allowed'
+                      isGenerating
+                        ? 'bg-[#F8FAFC] text-[#94A3B8] border-[#E2E8F0] cursor-not-allowed'
+                        : 'bg-[#1A2B4C] text-white border-[#1A2B4C] hover:bg-[#2D4263]'
                     }`}
                   >
                     {isGenerating ? (
@@ -716,18 +759,19 @@ export default function CertificateApp() {
               </div>
 
               {/* Mobile Sticky Bottom Bar (as per mobile spec guidelines) */}
-              <div className="block md:hidden sticky bottom-0 left-0 right-0 bg-white border-t-2 border-[#E2E8F0] p-4 z-30 order-last shadow-[0_-4px_12px_rgba(0,0,0,0.05)]" id="mobile-sticky-footer">
+              <div className="block md:hidden sticky bottom-0 left-0 right-0 bg-white p-4 z-30 order-last" id="mobile-sticky-footer">
                 {mobileStep === 1 ? (
                   <button
                     type="button"
                     id="btn-next-mobile"
-                    onClick={() => setMobileStep(2)}
-                    disabled={!isStep1Valid}
-                    className={`w-full py-3.5 px-4 font-black uppercase tracking-widest text-sm rounded-sm border-2 text-center transition-colors flex items-center justify-center gap-2 cursor-pointer ${
-                      isStep1Valid
-                        ? 'bg-[#1A2B4C] text-white border-[#1A2B4C] active:bg-[#2D4263]'
-                        : 'bg-[#F8FAFC] text-[#94A3B8] border-[#E2E8F0] cursor-not-allowed'
-                    }`}
+                    onClick={() => {
+                      if (!isStep1Valid) {
+                        setShowErrors(true);
+                      } else {
+                        setMobileStep(2);
+                      }
+                    }}
+                    className="w-full py-3.5 px-4 font-black uppercase tracking-widest text-sm rounded-sm border-2 text-center transition-colors flex items-center justify-center gap-2 cursor-pointer bg-[#1A2B4C] text-white border-[#1A2B4C] active:bg-[#2D4263]"
                   >
                     Next: Design & Preview
                     <ChevronRight className="w-4 h-4" />
@@ -747,11 +791,11 @@ export default function CertificateApp() {
                       type="button"
                       id="btn-generate-mobile"
                       onClick={handleGenerateCertificate}
-                      disabled={!isValid || isGenerating}
+                      disabled={isGenerating}
                       className={`flex-[2] py-3.5 px-4 font-black uppercase tracking-widest text-xs sm:text-sm rounded-sm border-2 text-center transition-colors flex items-center justify-center gap-2 cursor-pointer ${
-                        isValid && !isGenerating
-                          ? 'bg-[#1A2B4C] text-white border-[#1A2B4C] active:bg-[#2D4263]'
-                          : 'bg-[#F8FAFC] text-[#94A3B8] border-[#E2E8F0] cursor-not-allowed'
+                        isGenerating
+                          ? 'bg-[#F8FAFC] text-[#94A3B8] border-[#E2E8F0] cursor-not-allowed'
+                          : 'bg-[#1A2B4C] text-white border-[#1A2B4C] active:bg-[#2D4263]'
                       }`}
                     >
                       {isGenerating ? (
@@ -824,7 +868,7 @@ export default function CertificateApp() {
                       <p className="text-xs font-bold uppercase">Preparing certificate artifact...</p>
                     </div>
                   ) : (
-                    <div className="w-full h-full flex items-center justify-center p-2">
+                    <div className="w-full h-full flex items-center justify-center">
                       <CertificatePreview data={data} isGenerating={false} />
                     </div>
                   )}

@@ -9,6 +9,32 @@ import { TemplateBackground, TemplateBadge } from './TemplateDesigns';
 // @ts-ignore
 import certNavyGoldBg from '../../assets/cert_navy_gold_bg.png';
 
+const formatDate = (dateStr: string) => {
+  if (!dateStr) return '';
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) {
+    return dateStr;
+  }
+  const [year, month, day] = dateStr.split('-').map(Number);
+  const date = new Date(year, month - 1, day);
+  if (isNaN(date.getTime())) return dateStr;
+
+  const dayNum = date.getDate();
+  const monthName = date.toLocaleString('en-US', { month: 'long' });
+  const fullYear = date.getFullYear();
+
+  const suffix = (d: number) => {
+    if (d > 3 && d < 21) return 'th';
+    switch (d % 10) {
+      case 1:  return "st";
+      case 2:  return "nd";
+      case 3:  return "rd";
+      default: return "th";
+    }
+  };
+
+  return `${dayNum}${suffix(dayNum)} ${monthName} ${fullYear}`;
+};
+
 interface CertificatePreviewProps {
   data: CertificateData;
   isGenerating?: boolean; // If true, forces scale to 1 for html2canvas extraction
@@ -68,11 +94,11 @@ export const CertificatePreview: React.FC<CertificatePreviewProps> = ({ data, is
     const hasDate = data.rideDate.trim().length > 0;
 
     if (hasRide && hasDate) {
-      return `For successfully completing ${data.rideName.trim()} on ${data.rideDate.trim()}`;
+      return `For successfully completing ${data.rideName.trim()} on ${formatDate(data.rideDate.trim())}`;
     } else if (hasRide) {
       return `For successfully completing ${data.rideName.trim()}`;
     } else if (hasDate) {
-      return `For successfully completing the achievement challenge on ${data.rideDate.trim()}`;
+      return `For successfully completing the achievement challenge on ${formatDate(data.rideDate.trim())}`;
     } else {
       return 'For successfully completing the achievement challenge';
     }
@@ -152,7 +178,7 @@ export const CertificatePreview: React.FC<CertificatePreviewProps> = ({ data, is
                 fontWeight: 500
               }}
             >
-              For successfully completing {(data.rideName || 'World Bicycle Day Virtual Challenge 2026').trim()} held on {(data.rideDate || '13th July 2026').trim()}
+              For successfully completing {(data.rideName || 'World Bicycle Day Virtual Challenge 2026').trim()} held on {formatDate(data.rideDate || '13th July 2026').trim()}
             </div>
 
             {/* Duration Stat (placed above the line) */}
