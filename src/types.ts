@@ -17,6 +17,7 @@ export interface CertificateData {
   phoneNumber?: string;
   email?: string;
   completedDistance: string;
+  activityProofUrl?: string;
 }
 
 export interface TemplateConfig {
