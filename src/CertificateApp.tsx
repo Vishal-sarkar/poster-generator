@@ -269,6 +269,11 @@ export default function CertificateApp() {
     // Completed Distance
     if (!data.completedDistance || !data.completedDistance.trim()) {
       newErrors.completedDistance = 'Completed distance is required';
+    } else {
+      const compVal = parseFloat(data.completedDistance);
+      if (isNaN(compVal) || compVal <= 0) {
+        newErrors.completedDistance = 'Must be a positive number';
+      }
     }
 
     // Activity Proof URL

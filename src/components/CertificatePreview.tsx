@@ -9,7 +9,7 @@ import { TemplateBackground, TemplateBadge } from './TemplateDesigns';
 // @ts-ignore
 import certNavyGoldBg from '../../assets/cert_navy_gold_bg.png';
 // @ts-ignore
-import certYouthDayBg from '../../assets/cert_youth_day_bg.png';
+import certYouthDayBg from '../../assets/cert_youth_day_bg.svg';
 
 const formatDate = (dateStr: string) => {
   if (!dateStr) return '';
@@ -79,10 +79,17 @@ export const CertificatePreview: React.FC<CertificatePreviewProps> = ({ data, is
 
   const template = TEMPLATES.find((t) => t.id === data.selectedTemplateId) || TEMPLATES[0];
 
-  // Auto-scale font size for recipient's name
+  // Font size logic for recipient's name (different for Youth Day template vs others)
   const getNameStyle = (nameText: string): React.CSSProperties => {
+    if (data.selectedTemplateId === '2') {
+      const len = nameText.length || 1;
+      const calculatedSize = len <= 24 ? 80 : Math.max(38, Math.min(55, 1700 / len));
+      return {
+        fontSize: `${calculatedSize}px`,
+        color: template.textColor,
+      };
+    }
     const len = nameText.length || 1;
-    // Base font size is 68px for names up to 14 chars. Shrink down to 24px as length increases.
     const calculatedSize = Math.max(26, Math.min(68, 1100 / Math.max(12, len)));
     return {
       fontSize: `${calculatedSize}px`,
@@ -110,14 +117,11 @@ export const CertificatePreview: React.FC<CertificatePreviewProps> = ({ data, is
   const displayCompletedDistance = () => {
     const comp = (data.completedDistance || '').trim();
     if (!comp) {
-      return data.distance ? `${data.distance} ${data.distanceUnit}` : `0.00 ${data.distanceUnit}`;
+      const dist = (data.distance || '0.00').replace(/[a-zA-Z\s]/g, '');
+      return `${dist} KM`;
     }
-    
-    // If they typed units manually (e.g. "12.5 KM" or "10 Miles")
-    if (/[a-zA-Z]/.test(comp)) {
-      return comp.toUpperCase();
-    }
-    return `${comp} ${data.distanceUnit || 'KM'}`;
+    const cleanNum = comp.replace(/[^0-9.]/g, '');
+    return `${cleanNum} KM`;
   };
 
   const wrapperStyle: React.CSSProperties = isGenerating
@@ -159,22 +163,26 @@ export const CertificatePreview: React.FC<CertificatePreviewProps> = ({ data, is
               <img src={certNavyGoldBg} alt="Certificate Background" className="w-full h-full object-cover" />
             </div>
 
-            {/* Recipient Name with dynamic font size */}
+            {/* Recipient Name */}
             <div 
-              className="absolute left-1/2 -translate-x-1/2 text-center" 
+              className="absolute left-1/2 -translate-x-1/2 text-center flex items-center justify-center" 
               style={{ 
-                top: '425px', 
-                width: '1000px', 
+                top: '420px', 
+                width: '1200px', 
+                height: '60px',
                 zIndex: 10 
               }}
             >
               <h2 
-                className="font-bold tracking-normal leading-tight font-serif-cert"
+                className="font-bold tracking-normal leading-tight font-serif-cert text-center"
                 style={{
                   ...getNameStyle(data.name || 'YOUR NAME HERE'),
                   fontFamily: '"Cinzel", serif',
                   fontWeight: 700,
-                  color: '#0A2540'
+                  color: '#0A2540',
+                  margin: 0,
+                  padding: 0,
+                  whiteSpace: 'nowrap'
                 }}
               >
                 {(data.name || '').trim() || 'YOUR NAME HERE'}
@@ -242,24 +250,27 @@ export const CertificatePreview: React.FC<CertificatePreviewProps> = ({ data, is
               <img src={certYouthDayBg} alt="Certificate Background" className="w-full h-full object-cover" />
             </div>
 
-            {/* Recipient Name with dynamic font size */}
+            {/* Recipient Name */}
             <div 
-              className="absolute left-1/2 -translate-x-1/2 text-center" 
+              className="absolute left-1/2 -translate-x-1/2 text-center flex items-center justify-center" 
               style={{ 
-                top: isGenerating ? '355px' : '380px', 
-                width: '1000px', 
+                top: isGenerating ? '345px' : '370px', 
+                width: '1200px', 
+                height: '160px',
                 zIndex: 10 
               }}
             >
               <h2 
-                className="font-bold tracking-normal leading-tight"
+                className="font-bold tracking-normal text-center"
                 style={{
                   ...getNameStyle(data.name || 'YOUR NAME HERE'),
-                  fontSize: `${Math.max(26, Math.min(100, 1200 / Math.max(12, (data.name || 'YOUR NAME HERE').length)))}px`,
                   fontFamily: '"Poppins", sans-serif',
                   fontWeight: 500,
                   color: '#d09e3b',
-                  letterSpacing: '0.02em'
+                  letterSpacing: '0.02em',
+                  margin: 0,
+                  padding: 0,
+                  lineHeight: '1.05'
                 }}
               >
                 {(data.name || '').trim() || 'YOUR NAME HERE'}
@@ -347,7 +358,10 @@ export const CertificatePreview: React.FC<CertificatePreviewProps> = ({ data, is
               <div className="w-full max-w-[850px] min-h-[90px] flex items-center justify-center py-2" style={{ borderBottom: '2px solid transparent' }}>
                 <h2 
                   className={`font-bold tracking-normal leading-tight text-center px-4 ${template.fontName}`}
-                  style={getNameStyle(data.name || 'YOUR NAME HERE')}
+                  style={{
+                    ...getNameStyle(data.name || 'YOUR NAME HERE'),
+                    whiteSpace: 'nowrap'
+                  }}
                 >
                   {data.name.trim() || 'YOUR NAME HERE'}
                 </h2>

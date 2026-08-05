@@ -227,7 +227,7 @@ export const CertificateForm: React.FC<CertificateFormProps> = ({
         {/* Recipient Name */}
         <div>
           <label htmlFor="input-name" className="block text-[11px] font-bold uppercase tracking-wider text-[#64748B] mb-1.5">
-            Recipient Name *
+            Participant Name *
           </label>
           <div className="relative">
             <input
@@ -493,7 +493,13 @@ export const CertificateForm: React.FC<CertificateFormProps> = ({
               type="text"
               id="input-completed-distance"
               value={data.completedDistance || ''}
-              onChange={(e) => onChange('completedDistance', e.target.value)}
+              onChange={(e) => {
+                const val = e.target.value;
+                const cleanVal = val.replace(/[^0-9.]/g, '');
+                const dots = (cleanVal.match(/\./g) || []).length;
+                if (dots > 1) return;
+                onChange('completedDistance', cleanVal);
+              }}
               placeholder="ENTER COMPLETED DISTANCE (e.g. 50.0)"
               className={`w-full h-11 pl-4 pr-12 text-sm font-semibold bg-white border-2 rounded-sm focus:outline-none transition-colors ${
                 errors.completedDistance ? 'border-red-500 focus:border-red-600' : 'border-[#E2E8F0] focus:border-[#1A2B4C]'
