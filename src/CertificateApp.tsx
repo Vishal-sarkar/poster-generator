@@ -51,6 +51,7 @@ const DEFAULT_FORM_STATE: CertificateData = {
   phoneNumber: '',
   email: '',
   completedDistance: '',
+  activityProofUrl: '',
 };
 
 interface SavedCertificate {
@@ -91,6 +92,7 @@ export default function CertificateApp() {
   const [toastMessage, setToastMessage] = useState('Certificate Compiled Successfully!');
   const [mobileStep, setMobileStep] = useState<number>(1);
   const [showErrors, setShowErrors] = useState(false);
+  const [isUploadingProof, setIsUploadingProof] = useState(false);
 
 
 
@@ -193,6 +195,7 @@ export default function CertificateApp() {
         phoneNumber: '9876543210',
         email: 'karan.gupta@gmail.com',
         completedDistance: '50.00',
+        activityProofUrl: '',
       });
     } else {
       setData({
@@ -209,6 +212,7 @@ export default function CertificateApp() {
         phoneNumber: '9988776655',
         email: 'sarah.jenkins@gmail.com',
         completedDistance: '100.00',
+        activityProofUrl: '',
       });
     }
   };
@@ -267,6 +271,11 @@ export default function CertificateApp() {
       newErrors.completedDistance = 'Completed distance is required';
     }
 
+    // Activity Proof URL
+    if (!data.activityProofUrl || !data.activityProofUrl.trim()) {
+      newErrors.activityProofUrl = 'Activity proof is required';
+    }
+
     return newErrors;
   }, [data]);
 
@@ -279,13 +288,15 @@ export default function CertificateApp() {
     !errors.distance && 
     !errors.completedDistance && 
     !errors.duration && 
+    !errors.activityProofUrl && 
     data.name.trim() !== '' && 
     data.phoneNumber?.trim() !== '' && 
     data.email?.trim() !== '' && 
     data.rideDate?.trim() !== '' && 
     data.distance.trim() !== '' && 
     data.completedDistance.trim() !== '' && 
-    data.duration.trim() !== '';
+    data.duration.trim() !== '' && 
+    data.activityProofUrl?.trim() !== '';
 
   const handleFieldChange = (key: keyof CertificateData, value: string) => {
     if (key === 'distance' && value.includes(' ')) {
@@ -393,6 +404,46 @@ export default function CertificateApp() {
     }
   };
 
+  // Upload activity proof image to Cloudflare R2
+  const uploadActivityProofToR2 = async (file: File): Promise<string | null> => {
+    const uploadApi = import.meta.env.VITE_R2_UPLOAD_API;
+    if (!uploadApi) {
+      console.warn('VITE_R2_UPLOAD_API is not configured. Skipping activity proof Cloudflare R2 upload.');
+      return null;
+    }
+
+    setIsUploadingProof(true);
+    try {
+      const formData = new FormData();
+      formData.append('file', file, `proof_${Date.now()}_${file.name}`);
+
+      // Append type parameter as activity_proofs to keep it separated in R2
+      const uploadUrl = new URL(uploadApi);
+      uploadUrl.searchParams.set('type', 'activity_proofs');
+
+      const response = await fetch(uploadUrl.toString(), {
+        method: 'POST',
+        body: formData,
+      });
+
+      if (!response.ok) {
+        throw new Error(`Upload failed with server status ${response.status}`);
+      }
+
+      const result = await response.json();
+      const fileUrl = result.url || null;
+      if (fileUrl) {
+        handleFieldChange('activityProofUrl', fileUrl);
+      }
+      return fileUrl;
+    } catch (err) {
+      console.error('Error uploading activity proof to R2:', err);
+      return null;
+    } finally {
+      setIsUploadingProof(false);
+    }
+  };
+
   // Upload certificate image to Cloudflare R2
   const uploadCertificateToR2 = async (canvas: HTMLCanvasElement): Promise<string | null> => {
     const uploadApi = import.meta.env.VITE_R2_UPLOAD_API;
@@ -462,6 +513,7 @@ export default function CertificateApp() {
           event_name: eventName,
           certificate_url: uploadedUrl,
           completed_distance: data.completedDistance,
+          activity_proof_url: data.activityProofUrl,
         })
         .select('id')
         .single();
@@ -807,6 +859,8 @@ export default function CertificateApp() {
                   onGenerate={handleGenerateCertificate}
                   loadDemo={loadDemo}
                   mobileStep={mobileStep}
+                  isUploadingProof={isUploadingProof}
+                  onUploadProof={uploadActivityProofToR2}
                 />
 
                 {/* Desktop layout "Generate" anchor block */}

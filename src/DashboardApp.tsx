@@ -158,7 +158,8 @@ export default function DashboardApp() {
       'TEMPLATE ID', 
       'CERTIFICATE TYPE',
       'EVENT NAME',
-      'CERTIFICATE URL'
+      'CERTIFICATE URL',
+      'ACTIVITY PROOF URL'
     ];
 
     const rows = filteredLogs.map(log => [
@@ -174,7 +175,8 @@ export default function DashboardApp() {
       log.selected_template_id,
       log.certificate_type,
       log.event_name || 'N/A',
-      log.certificate_url || 'N/A'
+      log.certificate_url || 'N/A',
+      log.activity_proof_url || 'N/A'
     ]);
 
     const csvContent = [
@@ -405,20 +407,21 @@ export default function DashboardApp() {
                   <th className="p-3">Event Type</th>
                   <th className="p-3">Event Name</th>
                   <th className="p-3">Certificate Preview</th>
+                  <th className="p-3">Activity Proof</th>
                   <th className="p-3 pr-4">Created At</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-[#E2E8F0] text-xs font-semibold text-[#1A2B4C]">
                 {isLoading ? (
                   <tr>
-                    <td colSpan={12} className="p-10 text-center text-[#64748B]">
+                    <td colSpan={13} className="p-10 text-center text-[#64748B]">
                       <RefreshCw className="w-6 h-6 animate-spin mx-auto text-[#94A3B8] mb-2" />
                       <p className="text-[10px] font-black uppercase tracking-wider">Retrieving logs from database...</p>
                     </td>
                   </tr>
                 ) : filteredLogs.length === 0 ? (
                   <tr>
-                    <td colSpan={12} className="p-10 text-center text-[#64748B]">
+                    <td colSpan={13} className="p-10 text-center text-[#64748B]">
                       <Database className="w-8 h-8 mx-auto text-[#94A3B8] mb-2 opacity-50" />
                       <p className="text-[10px] font-black uppercase tracking-wider">No matching database records found</p>
                     </td>
@@ -462,6 +465,26 @@ export default function DashboardApp() {
                             <img
                               src={log.certificate_url}
                               alt="Certificate thumbnail"
+                              className="h-8 w-12 object-cover transition duration-300 group-hover:scale-105"
+                            />
+                            <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition flex items-center justify-center">
+                              <span className="text-[8px] text-white font-black uppercase tracking-wider">VIEW</span>
+                            </div>
+                          </button>
+                        ) : (
+                          <span className="text-slate-400 font-normal italic text-[10px]">N/A</span>
+                        )}
+                      </td>
+                      <td className="p-3">
+                        {log.activity_proof_url ? (
+                          <button
+                            type="button"
+                            onClick={() => setSelectedImageUrl(log.activity_proof_url!)}
+                            className="group relative block overflow-hidden rounded border border-[#E2E8F0] transition hover:border-[#1A2B4C] focus:outline-none cursor-pointer"
+                          >
+                            <img
+                              src={log.activity_proof_url}
+                              alt="Activity proof thumbnail"
                               className="h-8 w-12 object-cover transition duration-300 group-hover:scale-105"
                             />
                             <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition flex items-center justify-center">

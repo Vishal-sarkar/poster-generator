@@ -6,7 +6,7 @@
 import React from 'react';
 import { CertificateData, TEMPLATES, TemplateConfig } from '../types';
 import { getTemplateForEvent } from '../events';
-import { Award, Timer, Navigation, Calendar, Edit3, ShieldAlert, BadgeCheck, ChevronDown, Phone, Mail, TrendingUp } from 'lucide-react';
+import { Award, Timer, Navigation, Calendar, Edit3, ShieldAlert, BadgeCheck, ChevronDown, Phone, Mail, TrendingUp, Upload, Image, Loader2, Trash2 } from 'lucide-react';
 
 interface CertificateFormProps {
   data: CertificateData;
@@ -16,6 +16,8 @@ interface CertificateFormProps {
   errors: { [key: string]: string };
   loadDemo: (type: 'morning' | 'century') => void;
   mobileStep?: number;
+  isUploadingProof?: boolean;
+  onUploadProof?: (file: File) => Promise<string | null>;
 }
 
 export const CertificateForm: React.FC<CertificateFormProps> = ({
@@ -26,6 +28,8 @@ export const CertificateForm: React.FC<CertificateFormProps> = ({
   errors,
   loadDemo,
   mobileStep = 1,
+  isUploadingProof = false,
+  onUploadProof,
 }) => {
   const parseDuration = (dur: string) => {
     if (!dur || dur === '00:00:00') {
@@ -528,6 +532,83 @@ export const CertificateForm: React.FC<CertificateFormProps> = ({
           {errors.duration && (
             <p className="text-[10px] text-red-500 mt-1 leading-tight flex items-center gap-1 font-semibold uppercase tracking-wider">
               <ShieldAlert className="w-3 h-3 flex-shrink-0" /> {errors.duration}
+            </p>
+          )}
+        </div>
+
+        {/* Upload Activity Proof */}
+        <div>
+          <label className="block text-[11px] font-bold uppercase tracking-wider text-[#64748B] mb-1.5 flex items-center gap-1">
+            <Image className="w-3.5 h-3.5 text-[#64748B]" /> Upload Activity Proof *
+          </label>
+          <div className="relative">
+            {data.activityProofUrl ? (
+              // Uploaded/Success Preview state
+              <div className="border-2 border-dashed border-[#1A2B4C] rounded-sm p-4 bg-slate-50 flex items-center justify-between gap-3 animate-fade-in">
+                <div className="flex items-center gap-3 min-w-0">
+                  <div className="w-12 h-12 bg-white border border-[#E2E8F0] rounded-sm overflow-hidden flex-shrink-0 relative shadow-sm">
+                    <img
+                      src={data.activityProofUrl}
+                      alt="Activity proof preview"
+                      className="w-full h-full object-cover"
+                    />
+                  </div>
+                  <div className="min-w-0">
+                    <p className="text-xs font-bold text-[#1A2B4C] uppercase tracking-wider truncate">proof_uploaded.png</p>
+                    <p className="text-[10px] text-green-600 font-bold uppercase tracking-widest flex items-center gap-1 mt-0.5 animate-pulse">
+                      <BadgeCheck className="w-3.5 h-3.5" /> Uploaded successfully
+                    </p>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => onChange('activityProofUrl', '')}
+                  className="p-2 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded transition-colors flex-shrink-0 cursor-pointer"
+                  title="Remove Activity Proof"
+                >
+                  <Trash2 className="w-4 h-4" />
+                </button>
+              </div>
+            ) : (
+              // Empty Upload Box
+              <label
+                className={`flex flex-col items-center justify-center border-2 border-dashed rounded-sm p-5 bg-white cursor-pointer transition-all duration-150 relative ${
+                  errors.activityProofUrl
+                    ? 'border-red-500 hover:border-red-600 bg-red-50/20'
+                    : 'border-[#E2E8F0] hover:border-[#1A2B4C] hover:bg-slate-50/50'
+                }`}
+              >
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={async (e) => {
+                    const file = e.target.files?.[0];
+                    if (file && onUploadProof) {
+                      await onUploadProof(file);
+                    }
+                  }}
+                  disabled={isUploadingProof}
+                  className="hidden"
+                />
+                
+                {isUploadingProof ? (
+                  <div className="flex flex-col items-center justify-center space-y-2">
+                    <Loader2 className="w-6 h-6 animate-spin text-[#1A2B4C]" />
+                    <p className="text-[10px] font-bold text-[#1A2B4C] uppercase tracking-wider">Uploading proof image...</p>
+                  </div>
+                ) : (
+                  <div className="flex flex-col items-center justify-center space-y-1.5 text-center">
+                    <Upload className="w-6 h-6 text-[#64748B]" />
+                    <p className="text-xs font-bold text-[#1A2B4C] uppercase tracking-wider">Choose image file</p>
+                    <p className="text-[9px] text-[#64748B] uppercase tracking-widest font-medium">JPEG, PNG, GIF up to 5MB</p>
+                  </div>
+                )}
+              </label>
+            )}
+          </div>
+          {errors.activityProofUrl && (
+            <p className="text-[10px] text-red-500 mt-1 flex items-center gap-1 font-semibold uppercase tracking-wider">
+              <ShieldAlert className="w-3 h-3" /> {errors.activityProofUrl}
             </p>
           )}
         </div>
