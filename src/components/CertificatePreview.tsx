@@ -44,7 +44,15 @@ interface CertificatePreviewProps {
 
 export const CertificatePreview: React.FC<CertificatePreviewProps> = ({ data, isGenerating = false }) => {
   const containerRef = useRef<HTMLDivElement>(null);
-  const [scale, setScale] = useState(1);
+  const [scale, setScale] = useState(() => {
+    if (typeof window !== 'undefined') {
+      const isMobile = window.innerWidth < 768;
+      const estimateWidth = isMobile ? window.innerWidth - 32 : (window.innerWidth * 7 / 12) - 48;
+      const targetWidth = Math.min(1414, Math.max(0, estimateWidth - 4));
+      return targetWidth / 1414;
+    }
+    return 1;
+  });
 
   // Responsive scaling logic
   useEffect(() => {
@@ -55,9 +63,10 @@ export const CertificatePreview: React.FC<CertificatePreviewProps> = ({ data, is
 
     const handleResize = () => {
       if (!containerRef.current) return;
-      const parentWidth = containerRef.current.parentElement?.getBoundingClientRect().width || 1414;
-      // Allow slightly smaller padding
-      const targetWidth = Math.min(1414, parentWidth);
+      const containerWidth = containerRef.current.getBoundingClientRect().width || 1414;
+      // Subtract 4px for the left and right border of the wrapper
+      const maxTargetWidth = Math.max(0, containerWidth - 4);
+      const targetWidth = Math.min(1414, maxTargetWidth);
       setScale(targetWidth / 1414);
     };
 
@@ -132,8 +141,8 @@ export const CertificatePreview: React.FC<CertificatePreviewProps> = ({ data, is
         overflow: 'hidden',
       }
     : {
-        width: '100%',
-        height: `${scale * 970}px`,
+        width: `${scale * 1414 + 4}px`,
+        height: `${scale * 970 + 4}px`,
         position: 'relative',
         overflow: 'hidden',
         backgroundColor: '#f8fafc',

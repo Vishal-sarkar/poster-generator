@@ -14,7 +14,9 @@ import {
   Database,
   TrendingUp,
   Eye,
-  EyeOff
+  EyeOff,
+  Trash2,
+  Plus
 } from 'lucide-react';
 
 interface CertificateLog {
@@ -32,6 +34,235 @@ interface CertificateLog {
   certificate_url?: string;
   completed_distance?: string;
 }
+
+interface EventSetting {
+  id?: string;
+  event_id: string;
+  event_name: string;
+  release_date: string | null;
+  isTemp?: boolean;
+}
+
+interface CustomDateTimePickerProps {
+  value: string | null;
+  onChange: (value: string | null) => void;
+}
+
+const CustomDateTimePicker = ({ value, onChange }: CustomDateTimePickerProps) => {
+  const [isOpen, setIsOpen] = useState(false);
+  const [viewDate, setViewDate] = useState(() => value ? new Date(value) : new Date());
+
+  useEffect(() => {
+    if (value) {
+      setViewDate(new Date(value));
+    }
+  }, [value]);
+
+  const getDaysInMonth = (dateDate: Date) => {
+    const year = dateDate.getFullYear();
+    const month = dateDate.getMonth();
+    const firstDay = new Date(year, month, 1);
+    const startDayOfWeek = firstDay.getDay();
+    const totalDays = new Date(year, month + 1, 0).getDate();
+    const prevMonthTotalDays = new Date(year, month, 0).getDate();
+    const days: { day: number; isCurrentMonth: boolean; dateString: string }[] = [];
+    
+    // Prev month padding
+    for (let i = startDayOfWeek - 1; i >= 0; i--) {
+      const d = prevMonthTotalDays - i;
+      const prevMonth = month === 0 ? 11 : month - 1;
+      const prevYear = month === 0 ? year - 1 : year;
+      const dateString = `${prevYear}-${String(prevMonth + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+      days.push({ day: d, isCurrentMonth: false, dateString });
+    }
+    
+    // Active month days
+    for (let d = 1; d <= totalDays; d++) {
+      const dateString = `${year}-${String(month + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+      days.push({ day: d, isCurrentMonth: true, dateString });
+    }
+    
+    // Next month padding to fill complete grid of 42 cells
+    const remaining = 42 - days.length;
+    for (let d = 1; d <= remaining; d++) {
+      const nextMonth = month === 11 ? 0 : month + 1;
+      const nextYear = month === 11 ? year + 1 : year;
+      const dateString = `${nextYear}-${String(nextMonth + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+      days.push({ day: d, isCurrentMonth: false, dateString });
+    }
+    
+    return days;
+  };
+
+  let currentHour = '00';
+  let currentMinute = '00';
+  let selectedDateString = '';
+  
+  if (value) {
+    const d = new Date(value);
+    if (!isNaN(d.getTime())) {
+      selectedDateString = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+      currentHour = String(d.getHours()).padStart(2, '0');
+      currentMinute = String(d.getMinutes()).padStart(2, '0');
+    }
+  }
+
+  const handleDateSelect = (dateStr: string) => {
+    const combinedStr = `${dateStr}T${currentHour}:${currentMinute}:00`;
+    const newDate = new Date(combinedStr);
+    onChange(newDate.toISOString());
+  };
+
+  const handleTimeChange = (h: string, m: string) => {
+    const dateStr = selectedDateString || new Date().toISOString().split('T')[0];
+    const combinedStr = `${dateStr}T${h}:${m}:00`;
+    const newDate = new Date(combinedStr);
+    onChange(newDate.toISOString());
+  };
+
+  const handleSetToday = () => {
+    const now = new Date();
+    const todayStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+    const h = String(now.getHours()).padStart(2, '0');
+    const m = String(now.getMinutes()).padStart(2, '0');
+    const combinedStr = `${todayStr}T${h}:${m}:00`;
+    onChange(new Date(combinedStr).toISOString());
+    setViewDate(now);
+  };
+
+  const hoursArray = Array.from({ length: 24 }, (_, i) => String(i).padStart(2, '0'));
+  const minutesArray = Array.from({ length: 60 }, (_, i) => String(i).padStart(2, '0'));
+
+  return (
+    <div className="relative w-full">
+      <button
+        type="button"
+        onClick={() => setIsOpen(!isOpen)}
+        className="w-full h-10 px-3 bg-white border-2 border-[#E2E8F0] rounded-sm text-[#1A2B4C] text-xs font-semibold flex items-center justify-between hover:border-[#1A2B4C] transition-colors cursor-pointer"
+      >
+        <span className={!value ? 'text-slate-400 font-normal' : 'text-[#1A2B4C]'}>
+          {value ? (() => {
+            const d = new Date(value);
+            const pad = (num: number) => String(num).padStart(2, '0');
+            return `${pad(d.getDate())}-${pad(d.getMonth() + 1)}-${d.getFullYear()} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
+          })() : 'DD-MM-YYYY --:--'}
+        </span>
+        <Calendar className="w-4 h-4 text-[#64748B]" />
+      </button>
+
+      {isOpen && (
+        <>
+          <div className="fixed inset-0 z-40 bg-transparent" onClick={() => setIsOpen(false)} />
+          <div className="absolute left-0 top-full mt-1 bg-white border-2 border-[#1A2B4C] rounded-sm p-4 z-50 shadow-[0_4px_12px_rgba(0,0,0,0.1)] w-80">
+            {/* Calendar header */}
+            <div className="flex items-center justify-between mb-3.5">
+              <button
+                type="button"
+                onClick={() => setViewDate(new Date(viewDate.getFullYear(), viewDate.getMonth() - 1, 1))}
+                className="p-1 hover:bg-slate-100 rounded transition-colors text-[#1A2B4C] font-black text-sm select-none"
+              >
+                ←
+              </button>
+              <span className="text-xs font-black uppercase tracking-wider text-[#1A2B4C]">
+                {viewDate.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}
+              </span>
+              <button
+                type="button"
+                onClick={() => setViewDate(new Date(viewDate.getFullYear(), viewDate.getMonth() + 1, 1))}
+                className="p-1 hover:bg-slate-100 rounded transition-colors text-[#1A2B4C] font-black text-sm select-none"
+              >
+                →
+              </button>
+            </div>
+
+            {/* Weekdays header */}
+            <div className="grid grid-cols-7 gap-1 text-center text-[10px] font-black text-slate-400 uppercase mb-2">
+              <span>Su</span>
+              <span>Mo</span>
+              <span>Tu</span>
+              <span>We</span>
+              <span>Th</span>
+              <span>Fr</span>
+              <span>Sa</span>
+            </div>
+
+            {/* Calendar grid of days */}
+            <div className="grid grid-cols-7 gap-1">
+              {getDaysInMonth(viewDate).map((cell, idx) => {
+                const isSelected = selectedDateString === cell.dateString;
+                const isToday = new Date().toDateString() === new Date(cell.dateString).toDateString();
+                
+                return (
+                  <button
+                    key={idx}
+                    type="button"
+                    onClick={() => handleDateSelect(cell.dateString)}
+                    className={`h-8 w-8 text-xs font-bold rounded-full transition flex items-center justify-center mx-auto cursor-pointer ${
+                      isSelected
+                        ? 'bg-[#1A2B4C] text-white hover:bg-[#1A2B4C]'
+                        : !cell.isCurrentMonth
+                        ? 'text-slate-300 hover:bg-slate-50'
+                        : isToday
+                        ? 'border-2 border-[#1A2B4C] text-[#1A2B4C] hover:bg-slate-50'
+                        : 'text-[#1A2B4C] hover:bg-slate-100'
+                    }`}
+                  >
+                    {cell.day}
+                  </button>
+                );
+              })}
+            </div>
+
+            {/* Time select & Actions */}
+            <div className="flex items-center justify-between border-t border-slate-200 pt-2.5 mt-2.5">
+              <div className="flex items-center gap-1.5">
+                <span className="text-[10px] font-black uppercase text-slate-400">Time:</span>
+                <select
+                  value={currentHour}
+                  onChange={(e) => handleTimeChange(e.target.value, currentMinute)}
+                  className="h-8 px-1.5 text-xs font-bold border border-[#E2E8F0] rounded-sm text-[#1A2B4C] focus:outline-none focus:border-[#1A2B4C] bg-white cursor-pointer"
+                >
+                  {hoursArray.map(h => <option key={h} value={h}>{h}</option>)}
+                </select>
+                <span className="text-[#1A2B4C] font-bold text-xs">:</span>
+                <select
+                  value={currentMinute}
+                  onChange={(e) => handleTimeChange(currentHour, e.target.value)}
+                  className="h-8 px-1.5 text-xs font-bold border border-[#E2E8F0] rounded-sm text-[#1A2B4C] focus:outline-none focus:border-[#1A2B4C] bg-white cursor-pointer"
+                >
+                  {minutesArray.map(m => <option key={m} value={m}>{m}</option>)}
+                </select>
+              </div>
+              
+              <div className="flex gap-2.5">
+                <button
+                  type="button"
+                  onClick={() => {
+                    onChange(null);
+                    setIsOpen(false);
+                  }}
+                  className="text-[10px] font-black uppercase text-red-500 hover:text-red-700 transition cursor-pointer"
+                >
+                  Clear
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    handleSetToday();
+                    setIsOpen(false);
+                  }}
+                  className="text-[10px] font-black uppercase text-[#C5A059] hover:text-[#B48F48] transition cursor-pointer"
+                >
+                  Today
+                </button>
+              </div>
+            </div>
+          </div>
+        </>
+      )}
+    </div>
+  );
+};
 
 export default function DashboardApp() {
   // Authentication State
@@ -51,6 +282,12 @@ export default function DashboardApp() {
   const [selectedImageUrl, setSelectedImageUrl] = useState<string | null>(null);
   const [showPassword, setShowPassword] = useState(false);
 
+  // Event settings state
+  const [eventSettings, setEventSettings] = useState<EventSetting[]>([]);
+  const [isSavingSettings, setIsSavingSettings] = useState<string | null>(null);
+  const [settingsError, setSettingsError] = useState('');
+  const [settingsSuccess, setSettingsSuccess] = useState('');
+
   useEffect(() => {
     const debugDB = async () => {
       try {
@@ -69,6 +306,7 @@ export default function DashboardApp() {
   useEffect(() => {
     if (isAuthenticated) {
       fetchLogs();
+      fetchEventSettings();
     }
   }, [isAuthenticated]);
 
@@ -86,6 +324,109 @@ export default function DashboardApp() {
       console.error('Error fetching logs:', err);
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const fetchEventSettings = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('event_settings')
+        .select('*')
+        .order('created_at', { ascending: true });
+
+      if (error) {
+        // Table might not exist yet if migration hasn't been run
+        if (error.code === 'PGRST205') {
+          setSettingsError("Warning: Table 'event_settings' not found in database. Please run the SQL migration in your Supabase SQL Editor.");
+        }
+        throw error;
+      }
+      
+      let list = data || [];
+      if (!list.some(item => item.event_id === 'youth-day')) {
+        list = [...list, { event_id: 'youth-day', event_name: 'International Youth Day Virtual Challenge', release_date: null }];
+      }
+      setEventSettings(list);
+    } catch (err) {
+      console.error('Error fetching event settings:', err);
+    }
+  };
+
+  const handleSaveEventSetting = async (eventSetting: EventSetting) => {
+    if (!eventSetting.event_id.trim()) {
+      setSettingsError('Event ID is required');
+      return;
+    }
+    if (!eventSetting.event_name.trim()) {
+      setSettingsError('Event Name is required');
+      return;
+    }
+
+    const saveKey = eventSetting.id || eventSetting.event_id || 'new';
+    setIsSavingSettings(saveKey);
+    setSettingsError('');
+    setSettingsSuccess('');
+    try {
+      const payload: any = {
+        event_id: eventSetting.event_id.trim().toLowerCase(),
+        event_name: eventSetting.event_name.trim(),
+        release_date: eventSetting.release_date || null
+      };
+      if (eventSetting.id) {
+        payload.id = eventSetting.id;
+      }
+
+      const { error } = await supabase
+        .from('event_settings')
+        .upsert(payload, { onConflict: 'id' });
+
+      if (error) {
+        if (error.code === 'PGRST205') {
+          throw new Error("Table 'event_settings' not found. Make sure to run the SQL migration in your Supabase console.");
+        }
+        if (error.code === '23505') {
+          throw new Error(`Event ID "${eventSetting.event_id}" already exists. Please choose a unique Event ID.`);
+        }
+        throw error;
+      }
+      setSettingsSuccess(`Settings for "${eventSetting.event_name}" saved successfully!`);
+      await fetchEventSettings();
+    } catch (err: any) {
+      console.error('Error saving event setting:', err);
+      setSettingsError(err.message || 'Error saving event settings');
+    } finally {
+      setIsSavingSettings(null);
+    }
+  };
+
+  const handleAddNewEventSetting = () => {
+    setEventSettings(prev => [
+      ...prev,
+      {
+        event_id: '',
+        event_name: '',
+        release_date: null,
+        isTemp: true
+      }
+    ]);
+  };
+
+  const handleDeleteEventSetting = async (eventId: string) => {
+    if (!confirm(`Are you sure you want to delete settings for event "${eventId}"?`)) return;
+    setSettingsError('');
+    setSettingsSuccess('');
+    try {
+      const { error } = await supabase
+        .from('event_settings')
+        .delete()
+        .eq('event_id', eventId);
+
+      if (error) throw error;
+      setSettingsSuccess(`Event restriction for "${eventId}" deleted successfully.`);
+      await fetchEventSettings();
+    } catch (err: any) {
+      console.error('Error deleting event setting:', err);
+      setSettingsError(err.message || 'Error deleting event settings');
     }
   };
 
@@ -332,6 +673,162 @@ export default function DashboardApp() {
             <div className="w-10 h-10 bg-[#1A2B4C]/10 text-[#1A2B4C] flex items-center justify-center rounded-sm">
               <Award className="w-5 h-5" />
             </div>
+          </div>
+        </div>
+
+        {/* Event Release Restrictions Settings Panel */}
+        <div className="bg-white border-2 border-[#E2E8F0] p-6 rounded-sm space-y-4" id="event-restrictions-settings">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b-2 border-[#E2E8F0] pb-3">
+            <div className="flex items-center gap-2">
+              <Calendar className="w-5 h-5 text-[#C5A059]" />
+              <div>
+                <h2 className="text-sm font-black uppercase tracking-wider text-[#1A2B4C]">Certificate Release Restrictions</h2>
+                <p className="text-[10px] text-[#64748B] font-bold uppercase tracking-widest mt-0.5">Prevent certificate download prior to event date</p>
+              </div>
+            </div>
+            <button
+              type="button"
+              onClick={handleAddNewEventSetting}
+              className="px-3 py-1.5 bg-[#1A2B4C] hover:bg-[#2D4263] text-white text-[10px] font-black uppercase tracking-widest rounded-sm transition-colors flex items-center gap-1 cursor-pointer self-start sm:self-auto"
+            >
+              <Plus className="w-3.5 h-3.5" />
+              Add Event Restriction
+            </button>
+          </div>
+
+          {settingsError && (
+            <div className="bg-red-50 border-l-4 border-red-500 p-3 text-red-700 text-xs font-semibold flex items-center gap-2">
+              <ShieldAlert className="w-4 h-4 flex-shrink-0" />
+              <span>{settingsError}</span>
+            </div>
+          )}
+
+          {settingsSuccess && (
+            <div className="bg-emerald-50 border-l-4 border-emerald-500 p-3 text-emerald-700 text-xs font-semibold flex items-center gap-2">
+              <Award className="w-4 h-4 flex-shrink-0" />
+              <span>{settingsSuccess}</span>
+            </div>
+          )}
+
+          <div className="space-y-6">
+            {eventSettings.map((setting, idx) => {
+
+              return (
+                <div key={setting.event_id || `temp-${idx}`} className="border border-[#E2E8F0] p-4 rounded-sm space-y-4 bg-[#F8FAFC]">
+                  <div className="flex justify-between items-center">
+                    <div className="flex items-center gap-2">
+                      <span className="text-[10px] font-black uppercase tracking-wider text-[#64748B]">Event ID:</span>
+                      <input
+                        type="text"
+                        placeholder="e.g. youth-day"
+                        value={setting.event_id}
+                        onChange={(e) => {
+                          const updated = [...eventSettings];
+                          updated[idx].event_id = e.target.value.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9_-]/g, '');
+                          setEventSettings(updated);
+                        }}
+                        className="h-8 px-2 text-xs font-mono font-bold text-[#1A2B4C] bg-white border border-[#E2E8F0] rounded-sm focus:outline-none focus:border-[#1A2B4C] transition-colors w-40"
+                      />
+                    </div>
+                    <div className="flex items-center gap-3">
+                      {!setting.isTemp && (
+                        <button
+                          type="button"
+                          onClick={() => handleDeleteEventSetting(setting.event_id)}
+                          className="text-[9px] font-black text-red-500 hover:text-red-700 uppercase cursor-pointer flex items-center gap-0.5 border border-red-200 bg-red-50 px-2 py-0.5 rounded-sm transition-colors"
+                          title="Delete this restriction permanently"
+                        >
+                          <Trash2 className="w-3 h-3" />
+                          Delete Setting
+                        </button>
+                      )}
+                      {setting.isTemp && (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const updated = eventSettings.filter((_, i) => i !== idx);
+                            setEventSettings(updated);
+                          }}
+                          className="text-[9px] font-black text-slate-500 hover:text-black uppercase cursor-pointer border border-slate-200 bg-white px-2 py-0.5 rounded-sm transition-colors"
+                        >
+                          Cancel
+                        </button>
+                      )}
+                      <span className="text-[9px] font-black px-2 py-0.5 bg-[#C5A059]/10 border border-[#C5A059]/30 text-[#C5A059] rounded-sm uppercase tracking-wider">
+                        {setting.release_date ? 'RESTRICTION ACTIVE' : 'NO RESTRICTION'}
+                      </span>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-12 gap-4 items-end">
+                    <div className="md:col-span-5">
+                      <label className="block text-[10px] font-black uppercase tracking-wider text-[#64748B] mb-1.5">
+                        Event Display Name
+                      </label>
+                      <input
+                        type="text"
+                        placeholder="e.g. Independence Day Virtual Challenge"
+                        value={setting.event_name}
+                        onChange={(e) => {
+                          const updated = [...eventSettings];
+                          updated[idx].event_name = e.target.value;
+                          setEventSettings(updated);
+                        }}
+                        className="w-full h-10 px-3 text-xs font-semibold bg-white border-2 border-[#E2E8F0] rounded-sm focus:outline-none focus:border-[#1A2B4C] transition-colors"
+                      />
+                    </div>
+
+                    <div className="md:col-span-4">
+                      <label className="block text-[10px] font-black uppercase tracking-wider text-[#64748B] mb-1.5 flex items-center justify-between">
+                        <span>Release Date & Time</span>
+                        {setting.release_date && (
+                          <button
+                            type="button"
+                            onClick={() => {
+                              const updated = [...eventSettings];
+                              updated[idx].release_date = null;
+                              setEventSettings(updated);
+                            }}
+                            className="text-[9px] font-black text-red-500 uppercase hover:underline cursor-pointer"
+                          >
+                            Clear Restriction
+                          </button>
+                        )}
+                      </label>
+                      <CustomDateTimePicker
+                        value={setting.release_date}
+                        onChange={(val) => {
+                          const updated = [...eventSettings];
+                          updated[idx].release_date = val;
+                          setEventSettings(updated);
+                        }}
+                      />
+                    </div>
+
+                    <div className="md:col-span-3">
+                      <button
+                        type="button"
+                        disabled={isSavingSettings === (setting.id || setting.event_id || 'new')}
+                        onClick={() => handleSaveEventSetting(setting)}
+                        className="w-full h-10 bg-[#1A2B4C] hover:bg-[#2D4263] disabled:opacity-50 text-white font-black text-[10px] uppercase tracking-widest rounded-sm transition-colors flex items-center justify-center gap-1.5 cursor-pointer"
+                      >
+                        {isSavingSettings === (setting.id || setting.event_id || 'new') ? (
+                          <>
+                            <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                            Saving...
+                          </>
+                        ) : (
+                          <>
+                            <Database className="w-3.5 h-3.5" />
+                            Save Restrictions
+                          </>
+                        )}
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
           </div>
         </div>
 
