@@ -395,9 +395,9 @@ export default function CertificateApp() {
         backgroundColor: '#ffffff',
         logging: false,
         width: 1414,
-        height: 970,
+        height: 1000,
         windowWidth: 1414,
-        windowHeight: 970,
+        windowHeight: 1000,
         scrollX: 0,
         scrollY: 0,
         x: 0,
@@ -1215,7 +1215,7 @@ export default function CertificateApp() {
           left: '-2000px', 
           top: '-2000px', 
           width: '1414px', 
-          height: '970px',
+          height: '1000px',
           backgroundColor: '#ffffff'
         }} 
         id="export-capture-root"

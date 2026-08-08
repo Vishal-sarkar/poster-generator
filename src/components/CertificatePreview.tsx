@@ -9,7 +9,7 @@ import { TemplateBackground, TemplateBadge } from './TemplateDesigns';
 // @ts-ignore
 import certNavyGoldBg from '../../assets/cert_navy_gold_bg.png';
 // @ts-ignore
-import certYouthDayBg from '../../assets/cert_youth_day_bg.svg';
+import certYouthDayBg from '../../assets/cert_youth_day_bg.png';
 
 const formatDate = (dateStr: string) => {
   if (!dateStr) return '';
@@ -127,13 +127,13 @@ export const CertificatePreview: React.FC<CertificatePreviewProps> = ({ data, is
   const wrapperStyle: React.CSSProperties = isGenerating
     ? {
         width: '1414px',
-        height: '970px',
+        height: '1000px',
         position: 'relative',
         overflow: 'hidden',
       }
     : {
         width: '100%',
-        height: `${scale * 970}px`,
+        height: `${scale * 1000}px`,
         position: 'relative',
         overflow: 'hidden',
         backgroundColor: '#f8fafc',
@@ -143,7 +143,7 @@ export const CertificatePreview: React.FC<CertificatePreviewProps> = ({ data, is
 
   const innerStyle: React.CSSProperties = {
     width: '1414px',
-    height: '970px',
+    height: '1000px',
     transform: isGenerating ? 'none' : `scale(${scale})`,
     transformOrigin: 'top left',
     position: 'absolute',
@@ -167,7 +167,7 @@ export const CertificatePreview: React.FC<CertificatePreviewProps> = ({ data, is
             <div 
               className="absolute left-1/2 -translate-x-1/2 text-center flex items-center justify-center" 
               style={{ 
-                top: '420px', 
+                top: '433px', 
                 width: '1200px', 
                 height: '60px',
                 zIndex: 10 
@@ -193,7 +193,7 @@ export const CertificatePreview: React.FC<CertificatePreviewProps> = ({ data, is
             <div 
               className="absolute left-1/2 -translate-x-1/2 text-center flex items-center justify-center bg-white font-sans" 
               style={{ 
-                top: '522px', 
+                top: '538px', 
                 width: '950px', 
                 height: '35px', 
                 zIndex: 10,
@@ -210,7 +210,7 @@ export const CertificatePreview: React.FC<CertificatePreviewProps> = ({ data, is
               className="absolute text-center" 
               style={{ 
                 left: '266px', 
-                top: '635px', 
+                top: '655px', 
                 width: '260px', 
                 zIndex: 10 
               }}
@@ -225,7 +225,7 @@ export const CertificatePreview: React.FC<CertificatePreviewProps> = ({ data, is
               className="absolute text-center" 
               style={{ 
                 left: '886px', 
-                top: '635px', 
+                top: '655px', 
                 width: '260px', 
                 zIndex: 10 
               }}
@@ -254,7 +254,7 @@ export const CertificatePreview: React.FC<CertificatePreviewProps> = ({ data, is
             <div 
               className="absolute left-1/2 -translate-x-1/2 text-center flex items-center justify-center" 
               style={{ 
-                top: isGenerating ? '345px' : '370px', 
+                top: '370px', 
                 width: '1200px', 
                 height: '160px',
                 zIndex: 10 
@@ -282,7 +282,7 @@ export const CertificatePreview: React.FC<CertificatePreviewProps> = ({ data, is
               className="absolute text-center" 
               style={{ 
                 left: '266px', 
-                top: isGenerating ? '640px' : '664px', 
+                top: '680px', 
                 width: '260px', 
                 zIndex: 10 
               }}
@@ -297,7 +297,7 @@ export const CertificatePreview: React.FC<CertificatePreviewProps> = ({ data, is
               className="absolute text-center" 
               style={{ 
                 left: '858px', 
-                top: isGenerating ? '640px' : '664px', 
+                top: '680px', 
                 width: '260px', 
                 zIndex: 10 
               }}
