@@ -754,10 +754,6 @@ export default function CertificateApp() {
         throw new Error('Web Share not supported');
       }
     } catch (e) {
-      if (e && (e as any).name === 'AbortError') {
-        console.log('Share cancelled by user');
-        return;
-      }
       // Fallback: Copy info message to clipboard
       try {
         await navigator.clipboard.writeText(

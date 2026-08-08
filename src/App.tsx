@@ -791,18 +791,9 @@ function PosterGenerator() {
             text: `I just completed my target of ${state.target} in the ${challengeName}! Check out my finisher poster! ${emojis}`,
           };
 
-          try {
-            if (navigator.canShare(shareData)) {
-              await navigator.share(shareData);
-            } else {
-              handleDownload(); // Fallback
-            }
-          } catch (shareErr) {
-            if (shareErr && (shareErr as any).name === 'AbortError') {
-              console.log('Share cancelled by user');
-              return;
-            }
-            console.error('Error sharing:', shareErr);
+          if (navigator.canShare(shareData)) {
+            await navigator.share(shareData);
+          } else {
             handleDownload(); // Fallback
           }
         }, 'image/png');
