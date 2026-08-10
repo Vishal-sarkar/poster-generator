@@ -915,6 +915,20 @@ export default function CertificateApp() {
         throw new Error('Web Share not supported');
       }
     } catch (e) {
+      // Ignore user cancellation/abort exceptions
+      const errName = (e && (e as any).name || '').toLowerCase();
+      const errMsg = (e && (e as any).message || '').toLowerCase();
+      if (
+        errName.includes('abort') || 
+        errName.includes('cancel') || 
+        errMsg.includes('abort') || 
+        errMsg.includes('cancel') || 
+        errMsg.includes('dismiss')
+      ) {
+        console.log('Share cancelled or dismissed by user');
+        return;
+      }
+
       // Fallback: Copy info message to clipboard
       try {
         await navigator.clipboard.writeText(
