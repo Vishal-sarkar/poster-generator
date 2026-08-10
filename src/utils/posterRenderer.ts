@@ -410,7 +410,8 @@ export function renderPoster(
   isInteractive: boolean = false,
   loadedHalftone: HTMLImageElement | null = null,
   loadedYouthDayBg: HTMLImageElement | null = null,
-  loadedIndependenceDayBg: HTMLImageElement | null = null
+  loadedIndependenceDayBg: HTMLImageElement | null = null,
+  loadedIndependenceDayCyclingBg: HTMLImageElement | null = null
 ) {
   const ctx = canvas.getContext('2d');
   if (!ctx) return;
@@ -457,11 +458,25 @@ export function renderPoster(
   // 1. DRAW BACKGROUND LAYER FIRST
   // --------------------------------------------------
   if (config.id === 'independence-day') {
-    if (loadedIndependenceDayBg) {
-      ctx.drawImage(loadedIndependenceDayBg, 0, 0, 1080, 1080);
+    const isWalkRunning = state.activityRoute === 'walk-runing' || 
+      (typeof window !== 'undefined' && window.location.pathname.includes('/walk-runing'));
+
+    if (isWalkRunning) {
+      if (loadedIndependenceDayBg) {
+        ctx.drawImage(loadedIndependenceDayBg, 0, 0, 1080, 1080);
+      } else {
+        ctx.fillStyle = '#FF9933';
+        ctx.fillRect(0, 0, 1080, 1080);
+      }
     } else {
-      ctx.fillStyle = '#FF9933';
-      ctx.fillRect(0, 0, 1080, 1080);
+      if (loadedIndependenceDayCyclingBg) {
+        ctx.drawImage(loadedIndependenceDayCyclingBg, 0, 0, 1080, 1080);
+      } else if (loadedIndependenceDayBg) {
+        ctx.drawImage(loadedIndependenceDayBg, 0, 0, 1080, 1080);
+      } else {
+        ctx.fillStyle = '#FF9933';
+        ctx.fillRect(0, 0, 1080, 1080);
+      }
     }
   } else if (config.id === 'youth-day') {
     if (loadedYouthDayBg) {

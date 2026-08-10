@@ -43,6 +43,8 @@ import DashboardApp from './DashboardApp';
 import baackgroundimg from '../assets/baackgroundimg.png';
 // @ts-ignore
 import independenceDayBg from '../assets/independence_day_bg.jpg';
+// @ts-ignore
+import independenceDayCyclingBg from '../assets/independence_day_cycling_bg.jpg';
 
 
 interface DropdownProps {
@@ -328,6 +330,7 @@ function PosterGenerator() {
   const [loadedHalftone, setLoadedHalftone] = useState<HTMLImageElement | null>(null);
   const [loadedYouthDayBg, setLoadedYouthDayBg] = useState<HTMLImageElement | null>(null);
   const [loadedIndependenceDayBg, setLoadedIndependenceDayBg] = useState<HTMLImageElement | null>(null);
+  const [loadedIndependenceDayCyclingBg, setLoadedIndependenceDayCyclingBg] = useState<HTMLImageElement | null>(null);
 
   useEffect(() => {
     const img = new Image();
@@ -358,6 +361,12 @@ function PosterGenerator() {
     img5.src = independenceDayBg;
     img5.onload = () => {
       setLoadedIndependenceDayBg(img5);
+    };
+
+    const img6 = new Image();
+    img6.src = independenceDayCyclingBg;
+    img6.onload = () => {
+      setLoadedIndependenceDayCyclingBg(img6);
     };
   }, []);
 
@@ -479,12 +488,12 @@ function PosterGenerator() {
   // Redraw both canvases instantly when state, loadedPhoto, dragging state, or step/view state changes
   useEffect(() => {
     if (desktopCanvasRef.current) {
-      renderPoster(desktopCanvasRef.current, state, loadedPhoto, loadedCyclingBg, loadedRunWalkBg, isDragging, loadedHalftone, loadedYouthDayBg, loadedIndependenceDayBg);
+      renderPoster(desktopCanvasRef.current, state, loadedPhoto, loadedCyclingBg, loadedRunWalkBg, isDragging, loadedHalftone, loadedYouthDayBg, loadedIndependenceDayBg, loadedIndependenceDayCyclingBg);
     }
     if (mobileCanvasRef.current) {
-      renderPoster(mobileCanvasRef.current, state, loadedPhoto, loadedCyclingBg, loadedRunWalkBg, isDragging, loadedHalftone, loadedYouthDayBg, loadedIndependenceDayBg);
+      renderPoster(mobileCanvasRef.current, state, loadedPhoto, loadedCyclingBg, loadedRunWalkBg, isDragging, loadedHalftone, loadedYouthDayBg, loadedIndependenceDayBg, loadedIndependenceDayCyclingBg);
     }
-  }, [state, loadedPhoto, loadedCyclingBg, loadedRunWalkBg, isDragging, mobileStep, isGenerated, loadedHalftone, loadedYouthDayBg, loadedIndependenceDayBg]);
+  }, [state, loadedPhoto, loadedCyclingBg, loadedRunWalkBg, isDragging, mobileStep, isGenerated, loadedHalftone, loadedYouthDayBg, loadedIndependenceDayBg, loadedIndependenceDayCyclingBg]);
 
   // Hook scroll wheel zooming directly onto canvases to prevent page-level scrolling
   useEffect(() => {
