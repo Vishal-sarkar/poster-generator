@@ -36,6 +36,8 @@ import { getTemplateForEvent } from './events';
 import html2canvas from 'html2canvas';
 import { jsPDF } from 'jspdf';
 import { supabase } from './supabaseClient';
+// @ts-ignore
+import logoImg from '../assets/logo.jpeg';
 
 // Initial state for certificate input
 const DEFAULT_FORM_STATE: CertificateData = {
@@ -973,8 +975,8 @@ export default function CertificateApp() {
       {/* Header Bar */}
       <header className="bg-white border-b-2 border-[#E2E8F0] sticky top-0 z-40 px-6 py-4 flex items-center justify-between" id="header-bar">
         <div className="flex items-center gap-3">
-          <div className="w-8 h-8 bg-[#1A2B4C] flex items-center justify-center font-black text-white text-lg rounded-sm">
-            P
+          <div className="w-8 h-8 flex items-center justify-center overflow-hidden rounded-sm">
+            <img src={logoImg} alt="Pedals Power" className="w-full h-full object-contain" />
           </div>
           <div>
             <h1 className="text-lg font-black uppercase tracking-tight text-[#1A2B4C]">Pedals Power</h1>
