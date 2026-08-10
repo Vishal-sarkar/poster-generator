@@ -153,7 +153,7 @@ const CustomDateTimePicker = ({ value, onChange }: CustomDateTimePickerProps) =>
       {isOpen && (
         <>
           <div className="fixed inset-0 z-40 bg-transparent" onClick={() => setIsOpen(false)} />
-          <div className="absolute left-0 top-full mt-1 bg-white border-2 border-[#1A2B4C] rounded-sm p-4 z-50 shadow-[0_4px_12px_rgba(0,0,0,0.1)] w-80">
+          <div className="absolute left-0 top-full mt-1 bg-white border-2 border-[#1A2B4C] rounded-sm p-4 z-50 shadow-[0_4px_12px_rgba(0,0,0,0.1)] w-80 max-w-[calc(100vw-2.5rem)]">
             {/* Calendar header */}
             <div className="flex items-center justify-between mb-3.5">
               <button
@@ -677,10 +677,10 @@ export default function DashboardApp() {
         </div>
 
         {/* Event Release Restrictions Settings Panel */}
-        <div className="bg-white border-2 border-[#E2E8F0] p-6 rounded-sm space-y-4" id="event-restrictions-settings">
+        <div className="bg-white border-2 border-[#E2E8F0] p-4 sm:p-6 rounded-sm space-y-4" id="event-restrictions-settings">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b-2 border-[#E2E8F0] pb-3">
             <div className="flex items-center gap-2">
-              <Calendar className="w-5 h-5 text-[#C5A059]" />
+              <Calendar className="w-5 h-5 text-[#C5A059] flex-shrink-0" />
               <div>
                 <h2 className="text-sm font-black uppercase tracking-wider text-[#1A2B4C]">Certificate Release Restrictions</h2>
                 <p className="text-[10px] text-[#64748B] font-bold uppercase tracking-widest mt-0.5">Prevent certificate download prior to event date</p>
@@ -689,7 +689,7 @@ export default function DashboardApp() {
             <button
               type="button"
               onClick={handleAddNewEventSetting}
-              className="px-3 py-1.5 bg-[#1A2B4C] hover:bg-[#2D4263] text-white text-[10px] font-black uppercase tracking-widest rounded-sm transition-colors flex items-center gap-1 cursor-pointer self-start sm:self-auto"
+              className="px-3 py-1.5 bg-[#1A2B4C] hover:bg-[#2D4263] text-white text-[10px] font-black uppercase tracking-widest rounded-sm transition-colors flex items-center justify-center gap-1 cursor-pointer w-full sm:w-auto"
             >
               <Plus className="w-3.5 h-3.5" />
               Add Event Restriction
@@ -714,10 +714,10 @@ export default function DashboardApp() {
             {eventSettings.map((setting, idx) => {
 
               return (
-                <div key={setting.event_id || `temp-${idx}`} className="border border-[#E2E8F0] p-4 rounded-sm space-y-4 bg-[#F8FAFC]">
-                  <div className="flex justify-between items-center">
-                    <div className="flex items-center gap-2">
-                      <span className="text-[10px] font-black uppercase tracking-wider text-[#64748B]">Event ID:</span>
+                <div key={setting.event_id || `temp-${idx}`} className="border border-[#E2E8F0] p-3.5 sm:p-4 rounded-sm space-y-4 bg-[#F8FAFC]">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-[#E2E8F0] pb-3">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <span className="text-[10px] font-black uppercase tracking-wider text-[#64748B] shrink-0">Event ID:</span>
                       <input
                         type="text"
                         placeholder="e.g. youth-day"
@@ -727,15 +727,15 @@ export default function DashboardApp() {
                           updated[idx].event_id = e.target.value.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9_-]/g, '');
                           setEventSettings(updated);
                         }}
-                        className="h-8 px-2 text-xs font-mono font-bold text-[#1A2B4C] bg-white border border-[#E2E8F0] rounded-sm focus:outline-none focus:border-[#1A2B4C] transition-colors w-40"
+                        className="h-8 px-2 text-xs font-mono font-bold text-[#1A2B4C] bg-white border border-[#E2E8F0] rounded-sm focus:outline-none focus:border-[#1A2B4C] transition-colors w-full sm:w-40"
                       />
                     </div>
-                    <div className="flex items-center gap-3">
+                    <div className="flex flex-wrap items-center justify-between sm:justify-end gap-2">
                       {!setting.isTemp && (
                         <button
                           type="button"
                           onClick={() => handleDeleteEventSetting(setting.event_id)}
-                          className="text-[9px] font-black text-red-500 hover:text-red-700 uppercase cursor-pointer flex items-center gap-0.5 border border-red-200 bg-red-50 px-2 py-0.5 rounded-sm transition-colors"
+                          className="text-[9px] font-black text-red-500 hover:text-red-700 uppercase cursor-pointer flex items-center gap-0.5 border border-red-200 bg-red-50 px-2 py-1 rounded-sm transition-colors"
                           title="Delete this restriction permanently"
                         >
                           <Trash2 className="w-3 h-3" />
@@ -749,12 +749,12 @@ export default function DashboardApp() {
                             const updated = eventSettings.filter((_, i) => i !== idx);
                             setEventSettings(updated);
                           }}
-                          className="text-[9px] font-black text-slate-500 hover:text-black uppercase cursor-pointer border border-slate-200 bg-white px-2 py-0.5 rounded-sm transition-colors"
+                          className="text-[9px] font-black text-slate-500 hover:text-black uppercase cursor-pointer border border-slate-200 bg-white px-2 py-1 rounded-sm transition-colors"
                         >
                           Cancel
                         </button>
                       )}
-                      <span className="text-[9px] font-black px-2 py-0.5 bg-[#C5A059]/10 border border-[#C5A059]/30 text-[#C5A059] rounded-sm uppercase tracking-wider">
+                      <span className="text-[9px] font-black px-2 py-1 bg-[#C5A059]/10 border border-[#C5A059]/30 text-[#C5A059] rounded-sm uppercase tracking-wider whitespace-nowrap">
                         {setting.release_date ? 'RESTRICTION ACTIVE' : 'NO RESTRICTION'}
                       </span>
                     </div>
