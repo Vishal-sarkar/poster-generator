@@ -26,7 +26,8 @@ import {
   TrendingUp,
   Sliders,
   ChevronDown,
-  ChevronUp
+  ChevronUp,
+  Lock
 } from 'lucide-react';
 import { CertificateData, TEMPLATES } from './types';
 import { CertificatePreview } from './components/CertificatePreview';
@@ -35,6 +36,8 @@ import { getTemplateForEvent } from './events';
 import html2canvas from 'html2canvas';
 import { jsPDF } from 'jspdf';
 import { supabase } from './supabaseClient';
+// @ts-ignore
+import logoImg from '../assets/logo.jpeg';
 
 // Initial state for certificate input
 const DEFAULT_FORM_STATE: CertificateData = {
@@ -63,6 +66,106 @@ interface SavedCertificate {
   date: string;
   imgUrl: string;
 }
+
+const CertificateLockScreen = ({ eventName, releaseDate, onBack }: { eventName: string; releaseDate: string; onBack: () => void }) => {
+  const calculateTimeLeft = () => {
+    const difference = +new Date(releaseDate) - +new Date();
+    let timeLeft = {
+      days: 0,
+      hours: 0,
+      minutes: 0,
+      seconds: 0,
+    };
+
+    if (difference > 0) {
+      timeLeft = {
+        days: Math.floor(difference / (1000 * 60 * 60 * 24)),
+        hours: Math.floor((difference / (1000 * 60 * 60)) % 24),
+        minutes: Math.floor((difference / 1000 / 60) % 60),
+        seconds: Math.floor((difference / 1000) % 60),
+      };
+    }
+
+    return timeLeft;
+  };
+
+  const [timeLeft, setTimeLeft] = useState(calculateTimeLeft());
+
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setTimeLeft(calculateTimeLeft());
+    }, 1000);
+
+    return () => clearInterval(timer);
+  }, [releaseDate]);
+
+  const formattedDate = new Date(releaseDate).toLocaleString('en-US', {
+    weekday: 'long',
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric',
+    hour: 'numeric',
+    minute: '2-digit',
+    hour12: true,
+  });
+
+  return (
+    <div className="flex-1 flex flex-col justify-center items-center p-6 text-center max-w-2xl mx-auto space-y-8 my-12" id="lock-screen-container">
+      {/* Icon with float animation */}
+      <motion.div 
+        animate={{ y: [0, -10, 0] }}
+        transition={{ repeat: Infinity, duration: 3, ease: "easeInOut" }}
+        className="w-20 h-20 bg-[#C5A059]/10 text-[#C5A059] flex items-center justify-center rounded-full border-2 border-[#C5A059]/30 shadow-none"
+      >
+        <Lock className="w-10 h-10" />
+      </motion.div>
+
+      {/* Main text */}
+      <div className="space-y-3">
+        <h2 className="text-2xl font-black uppercase tracking-wider text-[#1A2B4C]">Certificates Locked</h2>
+        <p className="text-xs text-[#64748B] font-bold uppercase tracking-widest leading-relaxed">
+          The certificates for <span className="text-[#1A2B4C] font-black">{eventName}</span> are scheduled for release.
+        </p>
+      </div>
+
+      {/* Countdown display */}
+      <div className="grid grid-cols-4 gap-3 max-w-md w-full" id="lock-countdown">
+        {[
+          { label: 'DAYS', value: timeLeft.days },
+          { label: 'HOURS', value: timeLeft.hours },
+          { label: 'MINUTES', value: timeLeft.minutes },
+          { label: 'SECONDS', value: timeLeft.seconds },
+        ].map((item) => (
+          <div key={item.label} className="bg-white border-2 border-[#E2E8F0] p-4 rounded-sm flex flex-col items-center">
+            <span className="text-2xl sm:text-3xl font-black text-[#1A2B4C] font-mono">
+              {String(item.value).padStart(2, '0')}
+            </span>
+            <span className="text-[9px] font-bold tracking-widest text-[#64748B] mt-1">
+              {item.label}
+            </span>
+          </div>
+        ))}
+      </div>
+
+      {/* Official release notice */}
+      <div className="bg-[#1A2B4C]/5 border border-[#1A2B4C]/15 p-4 rounded-sm w-full max-w-md flex flex-col items-center gap-1">
+        <span className="text-[10px] font-black tracking-widest uppercase text-[#64748B]">Official Release Time</span>
+        <span className="text-xs font-bold text-[#1A2B4C]">{formattedDate}</span>
+      </div>
+
+      {/* Back to Form Button */}
+      <div className="pt-2">
+        <button
+          type="button"
+          onClick={onBack}
+          className="px-6 py-2.5 bg-white hover:bg-[#F8FAFC] border-2 border-[#E2E8F0] text-[#1A2B4C] font-black text-xs uppercase tracking-widest rounded-sm transition-colors cursor-pointer"
+        >
+          Back to Standard Form
+        </button>
+      </div>
+    </div>
+  );
+};
 
 export default function CertificateApp() {
   const [data, setData] = useState<CertificateData>(() => {
@@ -94,6 +197,31 @@ export default function CertificateApp() {
   const [showErrors, setShowErrors] = useState(false);
   const [isUploadingProof, setIsUploadingProof] = useState(false);
 
+  // Event settings state for lock validation
+  const [eventSetting, setEventSetting] = useState<{ event_name: string; release_date: string | null } | null>(null);
+  const [isCheckingRestrictions, setIsCheckingRestrictions] = useState(true);
+  const [lockBypassed, setLockBypassed] = useState(false);
+  const [currentTime, setCurrentTime] = useState(() => Date.now());
+
+  // Keep track of current time for live unlock recalculation
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setCurrentTime(Date.now());
+    }, 1000);
+    return () => clearInterval(timer);
+  }, []);
+
+  // Check if restricted
+  const isLocked = useMemo(() => {
+    if (isCheckingRestrictions || !eventSetting || !eventSetting.release_date) return false;
+    const releaseTime = new Date(eventSetting.release_date).getTime();
+    return currentTime < releaseTime;
+  }, [isCheckingRestrictions, eventSetting, currentTime]);
+
+  const showLockScreen = useMemo(() => {
+    return isLocked && !lockBypassed;
+  }, [isLocked, lockBypassed]);
+
 
 
   // Load Certificate History from localStorage on mount
@@ -106,6 +234,39 @@ export default function CertificateApp() {
         console.error('Error parsing certificate history:', e);
       }
     }
+  }, []);
+
+  // Fetch event settings for release date checks
+  useEffect(() => {
+    const checkEventRestrictions = async () => {
+      const searchParams = typeof window !== 'undefined' ? new URLSearchParams(window.location.search) : null;
+      const eventId = searchParams ? (searchParams.get('event') || '').trim().toLowerCase() : '';
+
+      if (!eventId) {
+        setIsCheckingRestrictions(false);
+        return;
+      }
+
+      try {
+        const { data, error } = await supabase
+          .from('event_settings')
+          .select('event_name, release_date')
+          .eq('event_id', eventId)
+          .maybeSingle();
+
+        if (error) {
+          console.error('Error fetching event settings:', error);
+        } else if (data) {
+          setEventSetting(data);
+        }
+      } catch (err) {
+        console.error('Error checking event restrictions:', err);
+      } finally {
+        setIsCheckingRestrictions(false);
+      }
+    };
+
+    checkEventRestrictions();
   }, []);
 
   // Load event-specific template and sync target from URL path on mount/popstate
@@ -828,8 +989,8 @@ export default function CertificateApp() {
       {/* Header Bar */}
       <header className="bg-white border-b-2 border-[#E2E8F0] sticky top-0 z-40 px-6 py-4 flex items-center justify-between" id="header-bar">
         <div className="flex items-center gap-3">
-          <div className="w-8 h-8 bg-[#1A2B4C] flex items-center justify-center font-black text-white text-lg rounded-sm">
-            P
+          <div className="w-8 h-8 flex items-center justify-center overflow-hidden rounded-sm">
+            <img src={logoImg} alt="Pedals Power" className="w-full h-full object-contain" />
           </div>
           <div>
             <h1 className="text-lg font-black uppercase tracking-tight text-[#1A2B4C]">Pedals Power</h1>
@@ -842,22 +1003,38 @@ export default function CertificateApp() {
 
       {/* Main Layout Area */}
       <main className="flex-1 flex flex-col md:flex-row h-full max-w-7xl w-full mx-auto" id="main-content-layout">
-        <AnimatePresence mode="wait">
-          {view === 'edit' ? (
-            /* ================= EDIT MODE SCREEN ================= */
-            <motion.div
-              key="edit-view"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              className="flex-1 flex flex-col md:grid md:grid-cols-12 gap-0 md:gap-4 md:p-4 w-full"
-              id="app-editor-view"
-            >
+        {showLockScreen && eventSetting ? (
+          <CertificateLockScreen 
+            eventName={eventSetting.event_name} 
+            releaseDate={eventSetting.release_date!} 
+            onBack={() => setLockBypassed(true)}
+          />
+        ) : (
+          <AnimatePresence mode="wait">
+            {view === 'edit' ? (
+              /* ================= EDIT MODE SCREEN ================= */
+              <motion.div
+                key="edit-view"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                className="flex-1 flex flex-col md:grid md:grid-cols-12 gap-0 md:gap-4 md:p-4 w-full"
+                id="app-editor-view"
+              >
+                {isLocked && eventSetting && (
+                  <div className="col-span-12 bg-amber-50 border-l-4 border-amber-500 p-3.5 text-amber-900 text-xs font-semibold flex items-center gap-2 mb-2 rounded-sm shadow-sm" id="lock-warning-banner">
+                    <Lock className="w-4 h-4 flex-shrink-0 text-amber-600 animate-pulse" />
+                    <span>
+                      Notice: Certificate downloads for <strong>{eventSetting.event_name}</strong> are restricted until {new Date(eventSetting.release_date!).toLocaleString()}. You can still fill standard details and preview the layout.
+                    </span>
+                  </div>
+                )}
+              
               {/* Mobile Step Progress Indicator */}
               <div className="block md:hidden bg-white border-b-2 border-[#E2E8F0] px-4 py-3" id="mobile-step-indicator">
                 <div className="flex items-center justify-between">
                   <span className="text-[10px] font-black uppercase tracking-widest text-[#1A2B4C]">
-                    Step {mobileStep} of 3: {mobileStep === 1 ? "Certificate Stats" : "Preview & Template"}
+                    Step {mobileStep} of 3: {mobileStep === 1 ? "Certificate Details" : "Preview & Template"}
                   </span>
                   <div className="flex gap-1.5">
                     <div className={`w-6 h-1.5 rounded-sm transition-all duration-300 ${mobileStep >= 1 ? 'bg-[#1A2B4C]' : 'bg-[#E2E8F0]'}`} />
@@ -887,15 +1064,20 @@ export default function CertificateApp() {
                   <button
                     type="button"
                     id="btn-generate-desktop"
-                    onClick={handleGenerateCertificate}
-                    disabled={isGenerating}
-                    className={`w-full py-3.5 px-4 font-black uppercase tracking-widest text-sm rounded-sm border-2 transition-colors duration-150 cursor-pointer text-center flex items-center justify-center gap-2 ${
-                      isGenerating
+                    onClick={isLocked ? undefined : handleGenerateCertificate}
+                    disabled={isGenerating || isLocked}
+                    className={`w-full py-3.5 px-4 font-black uppercase tracking-widest text-sm rounded-sm border-2 transition-colors duration-150 text-center flex items-center justify-center gap-2 ${
+                      isGenerating || isLocked
                         ? 'bg-[#F8FAFC] text-[#94A3B8] border-[#E2E8F0] cursor-not-allowed'
                         : 'bg-[#1A2B4C] text-white border-[#1A2B4C] hover:bg-[#2D4263]'
                     }`}
                   >
-                    {isGenerating ? (
+                    {isLocked ? (
+                      <>
+                        <Lock className="w-4 h-4 text-red-500 animate-pulse" />
+                        Locked Until {new Date(eventSetting.release_date!).toLocaleDateString()}
+                      </>
+                    ) : isGenerating ? (
                       <>
                         <RefreshCw className="w-4 h-4 animate-spin" />
                         Compiling Certificate...
@@ -965,15 +1147,20 @@ export default function CertificateApp() {
                     <button
                       type="button"
                       id="btn-generate-mobile"
-                      onClick={handleGenerateCertificate}
-                      disabled={isGenerating}
+                      onClick={isLocked ? undefined : handleGenerateCertificate}
+                      disabled={isGenerating || isLocked}
                       className={`flex-[2] py-3.5 px-4 font-black uppercase tracking-widest text-xs sm:text-sm rounded-sm border-2 text-center transition-colors flex items-center justify-center gap-2 cursor-pointer ${
-                        isGenerating
+                        isGenerating || isLocked
                           ? 'bg-[#F8FAFC] text-[#94A3B8] border-[#E2E8F0] cursor-not-allowed'
                           : 'bg-[#1A2B4C] text-white border-[#1A2B4C] active:bg-[#2D4263]'
                       }`}
                     >
-                      {isGenerating ? (
+                      {isLocked ? (
+                        <>
+                          <Lock className="w-3.5 h-3.5 text-red-500 animate-pulse" />
+                          Locked
+                        </>
+                      ) : isGenerating ? (
                         <>
                           <RefreshCw className="w-3.5 h-3.5 animate-spin" />
                           Compiling...
@@ -1107,6 +1294,7 @@ export default function CertificateApp() {
             </motion.div>
           )}
         </AnimatePresence>
+        )}
       </main>
 
       {/* Slide-out Certificate History Logs Drawer */}
