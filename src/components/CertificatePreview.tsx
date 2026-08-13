@@ -340,16 +340,15 @@ export const CertificatePreview: React.FC<CertificatePreviewProps> = ({ data, is
 
             {/* Recipient Name */}
             <div 
-              className="absolute left-1/2 -translate-x-1/2 text-center flex items-center justify-center" 
+              className="absolute left-1/2 -translate-x-1/2 text-center" 
               style={{ 
-                top: '405px', 
+                top: '430px', 
                 width: '1200px', 
-                height: '140px',
                 zIndex: 10 
               }}
             >
               <h2 
-                className="font-medium tracking-normal text-center"
+                className="font-medium tracking-normal text-center block"
                 style={{
                   ...getNameStyle(data.name || 'YOUR NAME HERE'),
                   fontFamily: '"Glacial Indifference", sans-serif',
@@ -358,7 +357,7 @@ export const CertificatePreview: React.FC<CertificatePreviewProps> = ({ data, is
                   letterSpacing: '0.02em',
                   margin: 0,
                   padding: 0,
-                  lineHeight: '1.05'
+                  lineHeight: 1
                 }}
               >
                 {(data.name || '').trim() || 'YOUR NAME HERE'}
@@ -370,12 +369,12 @@ export const CertificatePreview: React.FC<CertificatePreviewProps> = ({ data, is
               className="absolute text-center" 
               style={{ 
                 left: '252px', 
-                top: '712px', 
+                top: '725px', 
                 width: '260px', 
                 zIndex: 10 
               }}
             >
-              <span className="text-[28px] font-medium tracking-normal text-[#1A2B4C]" style={{ fontFamily: '"Poppins", sans-serif', fontWeight: 500 }}>
+              <span className="text-[28px] font-medium tracking-normal text-[#1A2B4C] block text-center" style={{ fontFamily: '"Poppins", sans-serif', fontWeight: 500, lineHeight: 1 }}>
                 {data.duration || '00:00:00'}
               </span>
             </div>
@@ -385,12 +384,12 @@ export const CertificatePreview: React.FC<CertificatePreviewProps> = ({ data, is
               className="absolute text-center" 
               style={{ 
                 left: '844px', 
-                top: '712px', 
+                top: '725px', 
                 width: '260px', 
                 zIndex: 10 
               }}
             >
-              <span className="text-[28px] font-medium tracking-normal text-[#1A2B4C]" style={{ fontFamily: '"Poppins", sans-serif', fontWeight: 500 }}>
+              <span className="text-[28px] font-medium tracking-normal text-[#1A2B4C] block text-center" style={{ fontFamily: '"Poppins", sans-serif', fontWeight: 500, lineHeight: 1 }}>
                 {displayCompletedDistance()}
               </span>
             </div>
