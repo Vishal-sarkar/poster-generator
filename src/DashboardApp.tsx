@@ -762,7 +762,6 @@ export default function DashboardApp() {
                       </span>
                     </div>
                   </div>
-
                   <div className="grid grid-cols-1 md:grid-cols-12 gap-4 items-end">
                     <div className="md:col-span-5">
                       <label className="block text-[10px] font-black uppercase tracking-wider text-[#64748B] mb-1.5">
