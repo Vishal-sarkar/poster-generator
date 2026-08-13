@@ -360,11 +360,11 @@ export const CertificatePreview: React.FC<CertificatePreviewProps> = ({ data, is
               }}
             >
               <h2 
-                className="font-bold tracking-normal text-center"
+                className="font-medium tracking-normal text-center"
                 style={{
                   ...getNameStyle(data.name || 'YOUR NAME HERE'),
                   fontFamily: '"Glacial Indifference", sans-serif',
-                  fontWeight: 700,
+                  fontWeight: 500,
                   color: '#d09e3b',
                   letterSpacing: '0.02em',
                   margin: 0,
@@ -405,7 +405,7 @@ export const CertificatePreview: React.FC<CertificatePreviewProps> = ({ data, is
                 zIndex: 10 
               }}
             >
-              <span className="text-[28px] font-bold tracking-normal text-[#1A2B4C]" style={{ fontFamily: '"Poppins", sans-serif' }}>
+              <span className="text-[28px] font-medium tracking-normal text-[#1A2B4C]" style={{ fontFamily: '"Poppins", sans-serif', fontWeight: 500 }}>
                 {data.duration || '00:00:00'}
               </span>
             </div>
@@ -420,7 +420,7 @@ export const CertificatePreview: React.FC<CertificatePreviewProps> = ({ data, is
                 zIndex: 10 
               }}
             >
-              <span className="text-[28px] font-bold tracking-normal text-[#1A2B4C]" style={{ fontFamily: '"Poppins", sans-serif' }}>
+              <span className="text-[28px] font-medium tracking-normal text-[#1A2B4C]" style={{ fontFamily: '"Poppins", sans-serif', fontWeight: 500 }}>
                 {displayCompletedDistance()}
               </span>
             </div>
