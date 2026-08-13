@@ -405,7 +405,7 @@ export const CertificatePreview: React.FC<CertificatePreviewProps> = ({ data, is
                 zIndex: 10 
               }}
             >
-              <span className="text-[28px] font-bold tracking-normal text-[#1A2B4C]" style={{ fontFamily: '"Boston Angel", serif' }}>
+              <span className="text-[28px] font-bold tracking-normal text-[#1A2B4C]" style={{ fontFamily: '"Poppins", sans-serif' }}>
                 {data.duration || '00:00:00'}
               </span>
             </div>
@@ -420,7 +420,7 @@ export const CertificatePreview: React.FC<CertificatePreviewProps> = ({ data, is
                 zIndex: 10 
               }}
             >
-              <span className="text-[28px] font-bold tracking-normal text-[#1A2B4C]" style={{ fontFamily: '"Boston Angel", serif' }}>
+              <span className="text-[28px] font-bold tracking-normal text-[#1A2B4C]" style={{ fontFamily: '"Poppins", sans-serif' }}>
                 {displayCompletedDistance()}
               </span>
             </div>
