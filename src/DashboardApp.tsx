@@ -346,6 +346,9 @@ export default function DashboardApp() {
       if (!list.some(item => item.event_id === 'youth-day')) {
         list = [...list, { event_id: 'youth-day', event_name: 'International Youth Day Virtual Challenge', release_date: null }];
       }
+      if (!list.some(item => item.event_id === 'independence-day')) {
+        list = [...list, { event_id: 'independence-day', event_name: 'Independence Day Virtual Challenge', release_date: null }];
+      }
       setEventSettings(list);
     } catch (err) {
       console.error('Error fetching event settings:', err);

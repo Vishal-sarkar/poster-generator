@@ -29,7 +29,9 @@ CREATE POLICY "Allow public deletes" ON event_settings
   FOR DELETE TO public USING (true);
 
 
--- Insert initial settings for the youth-day event
+-- Insert initial settings for youth-day and independence-day events
 INSERT INTO event_settings (event_id, event_name, release_date)
-VALUES ('youth-day', 'International Youth Day Virtual Challenge', NULL)
+VALUES 
+  ('youth-day', 'International Youth Day Virtual Challenge', NULL),
+  ('independence-day', 'Independence Day Virtual Challenge', NULL)
 ON CONFLICT (event_id) DO NOTHING;

@@ -10,6 +10,10 @@ import { TemplateBackground, TemplateBadge } from './TemplateDesigns';
 import certNavyGoldBg from '../../assets/cert_navy_gold_bg.png';
 // @ts-ignore
 import certYouthDayBg from '../../assets/cert_youth_day_bg.svg';
+// @ts-ignore
+import certIndependenceDayBg from '../../assets/cert_independence_day_bg.jpg';
+// @ts-ignore
+import certIndependenceDayCyclingBg from '../../assets/cert_independence_day_cycling_bg.jpg';
 
 const formatDate = (dateStr: string) => {
   if (!dateStr) return '';
@@ -88,9 +92,9 @@ export const CertificatePreview: React.FC<CertificatePreviewProps> = ({ data, is
 
   const template = TEMPLATES.find((t) => t.id === data.selectedTemplateId) || TEMPLATES[0];
 
-  // Font size logic for recipient's name (different for Youth Day template vs others)
+  // Font size logic for recipient's name (different for Youth Day / Independence Day vs others)
   const getNameStyle = (nameText: string): React.CSSProperties => {
-    if (data.selectedTemplateId === '2') {
+    if (data.selectedTemplateId === '2' || data.selectedTemplateId === 'independence-day' || data.selectedTemplateId === '3') {
       const len = nameText.length || 1;
       const calculatedSize = len <= 24 ? 80 : Math.max(38, Math.min(55, 1700 / len));
       return {
@@ -307,6 +311,111 @@ export const CertificatePreview: React.FC<CertificatePreviewProps> = ({ data, is
               style={{ 
                 left: '858px', 
                 top: isGenerating ? '640px' : '664px', 
+                width: '260px', 
+                zIndex: 10 
+              }}
+            >
+              <span className="text-[28px] font-bold tracking-normal text-[#1A2B4C]" style={{ fontFamily: '"Boston Angel", serif' }}>
+                {displayCompletedDistance()}
+              </span>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (data.selectedTemplateId === 'independence-day' || data.selectedTemplateId === '3') {
+    const isWalkRunning = typeof window !== 'undefined' && window.location.pathname.includes('/walk-runing');
+    const bgImg = isWalkRunning ? certIndependenceDayBg : certIndependenceDayCyclingBg;
+
+    const defaultRideName = isWalkRunning 
+      ? 'Independence Day Run/Walk Virtual Challenge'
+      : 'Independence Day Cycling Virtual Challenge';
+    const defaultDateStr = '15th Aug-16th Aug 2026';
+
+    const hasCustomRide = data.rideName && data.rideName.trim().length > 0 && data.rideName.trim() !== defaultRideName;
+    const hasCustomDate = data.rideDate && data.rideDate.trim().length > 0;
+    
+    // Check if we need to override the pre-printed description line
+    const needsDescriptionOverride = hasCustomRide || hasCustomDate;
+
+    return (
+      <div ref={containerRef} className="w-full flex items-start justify-start select-none" id="cert-preview-wrapper">
+        <div style={wrapperStyle} className="transition-all duration-200">
+          <div style={innerStyle} className="bg-white relative shadow-none" id="certificate-print-area">
+            {/* Background Image */}
+            <div className="absolute inset-0 w-full h-full" style={{ zIndex: 0 }}>
+              <img src={bgImg} alt="Certificate Background" className="w-full h-full object-cover" />
+            </div>
+
+            {/* Recipient Name */}
+            <div 
+              className="absolute left-1/2 -translate-x-1/2 text-center flex items-center justify-center" 
+              style={{ 
+                top: isGenerating ? '345px' : '370px', 
+                width: '1200px', 
+                height: '160px',
+                zIndex: 10 
+              }}
+            >
+              <h2 
+                className="font-bold tracking-normal text-center"
+                style={{
+                  ...getNameStyle(data.name || 'YOUR NAME HERE'),
+                  fontFamily: '"Glacial Indifference", sans-serif',
+                  fontWeight: 700,
+                  color: '#d09e3b',
+                  letterSpacing: '0.02em',
+                  margin: 0,
+                  padding: 0,
+                  lineHeight: '1.05'
+                }}
+              >
+                {(data.name || '').trim() || 'YOUR NAME HERE'}
+              </h2>
+            </div>
+
+            {/* Event Description (Optional Override if Cycling or custom details) */}
+            {needsDescriptionOverride && (
+              <div 
+                className="absolute left-1/2 -translate-x-1/2 text-center flex items-center justify-center font-sans" 
+                style={{ 
+                  top: '570px', 
+                  width: '980px', 
+                  height: '55px', 
+                  zIndex: 10,
+                  backgroundColor: '#FAF7F2',
+                  color: '#1A2B4C',
+                  fontSize: '18px',
+                  fontWeight: 500
+                }}
+              >
+                For successfully completing {hasCustomRide ? data.rideName.trim() : defaultRideName} held on {hasCustomDate ? formatDate(data.rideDate.trim()).trim() : defaultDateStr}
+              </div>
+            )}
+
+            {/* Duration Stat (placed above the line) */}
+            <div 
+              className="absolute text-center" 
+              style={{ 
+                left: '252px', 
+                top: isGenerating ? '690px' : '712px', 
+                width: '260px', 
+                zIndex: 10 
+              }}
+            >
+              <span className="text-[28px] font-bold tracking-normal text-[#1A2B4C]" style={{ fontFamily: '"Boston Angel", serif' }}>
+                {data.duration || '00:00:00'}
+              </span>
+            </div>
+
+            {/* Distance Stat (placed above the line) */}
+            <div 
+              className="absolute text-center" 
+              style={{ 
+                left: '844px', 
+                top: isGenerating ? '690px' : '712px', 
                 width: '260px', 
                 zIndex: 10 
               }}

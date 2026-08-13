@@ -1,6 +1,19 @@
 @import url('https://fonts.googleapis.com/css2?family=Dancing+Script:wght@600;700&display=swap');
 @import "tailwindcss";
 
+@font-face {
+  font-family: 'Glacial Indifference';
+  font-style: normal;
+  font-weight: 400;
+  src: local('Glacial Indifference'), url('https://fonts.cdnfonts.com/s/19355/GlacialIndifference-Regular.woff') format('woff');
+}
+@font-face {
+  font-family: 'Glacial Indifference';
+  font-style: normal;
+  font-weight: 700;
+  src: local('Glacial Indifference'), url('https://fonts.cdnfonts.com/s/19355/GlacialIndifference-Bold.woff') format('woff');
+}
+
 @theme {
   --font-serif-cert: "Cinzel", serif;
   --font-signature: "Dancing Script", cursive;
