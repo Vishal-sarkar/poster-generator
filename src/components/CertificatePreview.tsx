@@ -353,7 +353,7 @@ export const CertificatePreview: React.FC<CertificatePreviewProps> = ({ data, is
             <div 
               className="absolute left-1/2 -translate-x-1/2 text-center flex items-center justify-center" 
               style={{ 
-                top: isGenerating ? '380px' : '405px', 
+                top: '405px', 
                 width: '1200px', 
                 height: '140px',
                 zIndex: 10 
@@ -400,7 +400,7 @@ export const CertificatePreview: React.FC<CertificatePreviewProps> = ({ data, is
               className="absolute text-center" 
               style={{ 
                 left: '252px', 
-                top: isGenerating ? '690px' : '712px', 
+                top: '712px', 
                 width: '260px', 
                 zIndex: 10 
               }}
@@ -415,7 +415,7 @@ export const CertificatePreview: React.FC<CertificatePreviewProps> = ({ data, is
               className="absolute text-center" 
               style={{ 
                 left: '844px', 
-                top: isGenerating ? '690px' : '712px', 
+                top: '712px', 
                 width: '260px', 
                 zIndex: 10 
               }}
