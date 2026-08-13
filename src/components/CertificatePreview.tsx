@@ -329,17 +329,6 @@ export const CertificatePreview: React.FC<CertificatePreviewProps> = ({ data, is
     const isWalkRunning = typeof window !== 'undefined' && window.location.pathname.includes('/walk-runing');
     const bgImg = isWalkRunning ? certIndependenceDayBg : certIndependenceDayCyclingBg;
 
-    const defaultRideName = isWalkRunning 
-      ? 'Independence Day Run/Walk Virtual Challenge'
-      : 'Independence Day Cycling Virtual Challenge';
-    const defaultDateStr = '15th Aug-16th Aug 2026';
-
-    const hasCustomRide = data.rideName && data.rideName.trim().length > 0 && data.rideName.trim() !== defaultRideName;
-    const hasCustomDate = data.rideDate && data.rideDate.trim().length > 0;
-    
-    // Check if we need to override the pre-printed description line
-    const needsDescriptionOverride = hasCustomRide || hasCustomDate;
-
     return (
       <div ref={containerRef} className="w-full flex items-start justify-start select-none" id="cert-preview-wrapper">
         <div style={wrapperStyle} className="transition-all duration-200">
@@ -375,25 +364,6 @@ export const CertificatePreview: React.FC<CertificatePreviewProps> = ({ data, is
                 {(data.name || '').trim() || 'YOUR NAME HERE'}
               </h2>
             </div>
-
-            {/* Event Description (Optional Override if Cycling or custom details) */}
-            {needsDescriptionOverride && (
-              <div 
-                className="absolute left-1/2 -translate-x-1/2 text-center flex items-center justify-center font-sans" 
-                style={{ 
-                  top: '570px', 
-                  width: '980px', 
-                  height: '55px', 
-                  zIndex: 10,
-                  backgroundColor: '#FAF7F2',
-                  color: '#1A2B4C',
-                  fontSize: '18px',
-                  fontWeight: 500
-                }}
-              >
-                For successfully completing {hasCustomRide ? data.rideName.trim() : defaultRideName} held on {hasCustomDate ? formatDate(data.rideDate.trim()).trim() : defaultDateStr}
-              </div>
-            )}
 
             {/* Duration Stat (placed above the line) */}
             <div 
