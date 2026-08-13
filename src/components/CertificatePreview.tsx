@@ -353,9 +353,9 @@ export const CertificatePreview: React.FC<CertificatePreviewProps> = ({ data, is
             <div 
               className="absolute left-1/2 -translate-x-1/2 text-center flex items-center justify-center" 
               style={{ 
-                top: isGenerating ? '345px' : '370px', 
+                top: isGenerating ? '380px' : '405px', 
                 width: '1200px', 
-                height: '160px',
+                height: '140px',
                 zIndex: 10 
               }}
             >
