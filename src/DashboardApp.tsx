@@ -346,6 +346,9 @@ export default function DashboardApp() {
       if (!list.some(item => item.event_id === 'youth-day')) {
         list = [...list, { event_id: 'youth-day', event_name: 'International Youth Day Virtual Challenge', release_date: null }];
       }
+      if (!list.some(item => item.event_id === 'independence-day')) {
+        list = [...list, { event_id: 'independence-day', event_name: 'Independence Day Virtual Challenge', release_date: null }];
+      }
       setEventSettings(list);
     } catch (err) {
       console.error('Error fetching event settings:', err);
@@ -759,7 +762,6 @@ export default function DashboardApp() {
                       </span>
                     </div>
                   </div>
-
                   <div className="grid grid-cols-1 md:grid-cols-12 gap-4 items-end">
                     <div className="md:col-span-5">
                       <label className="block text-[10px] font-black uppercase tracking-wider text-[#64748B] mb-1.5">
