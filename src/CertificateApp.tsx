@@ -563,12 +563,37 @@ export default function CertificateApp() {
         scrollY: 0,
         x: 0,
         y: 0,
+        onclone: (clonedDoc) => {
+          const clonedEl = clonedDoc.getElementById(element.id);
+          if (clonedEl) {
+            clonedEl.style.width = '1414px';
+            clonedEl.style.height = '970px';
+            clonedEl.style.maxWidth = 'none';
+            clonedEl.style.maxHeight = 'none';
+            clonedEl.style.transform = 'none';
+            clonedEl.style.position = 'absolute';
+            clonedEl.style.top = '0px';
+            clonedEl.style.left = '0px';
+
+            // Ensure background images fill 1414x970 in the memory snapshot on iOS WebKit
+            const images = clonedEl.querySelectorAll('img');
+            images.forEach((img) => {
+              img.style.width = '1414px';
+              img.style.height = '970px';
+              img.style.minWidth = '1414px';
+              img.style.minHeight = '970px';
+              img.style.maxWidth = 'none';
+              img.style.maxHeight = 'none';
+            });
+          }
+        },
       });
       return canvas;
     } finally {
       restoreStyles();
     }
   };
+
 
   // Upload activity proof image to Cloudflare R2
   const uploadActivityProofToR2 = async (file: File): Promise<string | null> => {

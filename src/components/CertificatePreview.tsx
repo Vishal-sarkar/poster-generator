@@ -258,10 +258,18 @@ export const CertificatePreview: React.FC<CertificatePreviewProps> = ({ data, is
       <div ref={containerRef} className="w-full flex items-start justify-start select-none" id="cert-preview-wrapper">
         <div style={wrapperStyle} className="transition-all duration-200">
           <div style={innerStyle} className="bg-white relative shadow-none" id="certificate-print-area">
-            {/* Background Image */}
+                        {/* Background Image */}
             <div className="absolute inset-0 w-full h-full" style={{ zIndex: 0 }}>
-              <img src={certYouthDayBg} alt="Certificate Background" className="w-full h-full object-cover" />
+              <img 
+                src={certYouthDayBg} 
+                alt="Certificate Background" 
+                className="w-full h-full object-cover" 
+                style={{ width: '1414px', height: '970px', maxWidth: 'none', maxHeight: 'none' }}
+                width="1414" 
+                height="970" 
+              />
             </div>
+
 
             {/* Recipient Name */}
             <div 
