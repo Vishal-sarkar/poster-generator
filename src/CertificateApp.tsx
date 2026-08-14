@@ -547,6 +547,27 @@ export default function CertificateApp() {
 
   // Helper to capture certificate canvas with exact coordinates & CORS support
   const captureCertificateCanvas = async (element: HTMLElement): Promise<HTMLCanvasElement> => {
+    // 1. Wait for custom web fonts to be fully loaded on WebKit / iOS Safari
+    if (typeof document !== 'undefined' && document.fonts && document.fonts.ready) {
+      try {
+        await document.fonts.ready;
+      } catch (err) {
+        console.warn('Font loading wait failed:', err);
+      }
+    }
+
+    // 2. Ensure all images inside target element are loaded
+    const images = Array.from(element.querySelectorAll('img'));
+    await Promise.all(
+      images.map((img) => {
+        if (img.complete) return Promise.resolve();
+        return new Promise((resolve) => {
+          img.onload = resolve;
+          img.onerror = resolve;
+        });
+      })
+    );
+
     const restoreStyles = await sanitizeStylesheets();
     try {
       const canvas = await html2canvas(element, {
@@ -563,6 +584,19 @@ export default function CertificateApp() {
         scrollY: 0,
         x: 0,
         y: 0,
+        onclone: (clonedDoc) => {
+          const clonedRoot = clonedDoc.getElementById(element.id);
+          if (clonedRoot) {
+            clonedRoot.style.position = 'relative';
+            clonedRoot.style.left = '0';
+            clonedRoot.style.top = '0';
+            clonedRoot.style.opacity = '1';
+            clonedRoot.style.visibility = 'visible';
+            clonedRoot.style.transform = 'none';
+            clonedRoot.style.width = '1414px';
+            clonedRoot.style.height = '970px';
+          }
+        },
       });
       return canvas;
     } finally {
@@ -1399,11 +1433,13 @@ export default function CertificateApp() {
       <div 
         className="fixed pointer-events-none overflow-hidden" 
         style={{ 
-          zIndex: -1000, 
-          left: '-2000px', 
-          top: '-2000px', 
+          zIndex: -9999, 
+          left: '0px', 
+          top: '0px', 
           width: '1414px', 
           height: '970px',
+          opacity: 0,
+          visibility: 'hidden',
           backgroundColor: '#ffffff'
         }} 
         id="export-capture-root"

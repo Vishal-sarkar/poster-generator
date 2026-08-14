@@ -173,7 +173,7 @@ export const CertificatePreview: React.FC<CertificatePreviewProps> = ({ data, is
           <div style={innerStyle} className="bg-white relative shadow-none" id="certificate-print-area">
             {/* Background Image */}
             <div className="absolute inset-0 w-full h-full" style={{ zIndex: 0 }}>
-              <img src={certNavyGoldBg} alt="Certificate Background" className="w-full h-full object-cover" />
+              <img src={certNavyGoldBg} alt="Certificate Background" className="w-full h-full object-cover" width="1414" height="970" />
             </div>
 
             {/* Recipient Name */}
@@ -260,14 +260,14 @@ export const CertificatePreview: React.FC<CertificatePreviewProps> = ({ data, is
           <div style={innerStyle} className="bg-white relative shadow-none" id="certificate-print-area">
             {/* Background Image */}
             <div className="absolute inset-0 w-full h-full" style={{ zIndex: 0 }}>
-              <img src={certYouthDayBg} alt="Certificate Background" className="w-full h-full object-cover" />
+              <img src={certYouthDayBg} alt="Certificate Background" className="w-full h-full object-cover" width="1414" height="970" />
             </div>
 
             {/* Recipient Name */}
             <div 
               className="absolute left-1/2 -translate-x-1/2 text-center flex items-center justify-center" 
               style={{ 
-                top: isGenerating ? '345px' : '370px', 
+                top: '370px', 
                 width: '1200px', 
                 height: '160px',
                 zIndex: 10 
@@ -295,7 +295,7 @@ export const CertificatePreview: React.FC<CertificatePreviewProps> = ({ data, is
               className="absolute text-center" 
               style={{ 
                 left: '266px', 
-                top: isGenerating ? '640px' : '664px', 
+                top: '664px', 
                 width: '260px', 
                 zIndex: 10 
               }}
@@ -310,7 +310,7 @@ export const CertificatePreview: React.FC<CertificatePreviewProps> = ({ data, is
               className="absolute text-center" 
               style={{ 
                 left: '858px', 
-                top: isGenerating ? '640px' : '664px', 
+                top: '664px', 
                 width: '260px', 
                 zIndex: 10 
               }}
@@ -335,14 +335,14 @@ export const CertificatePreview: React.FC<CertificatePreviewProps> = ({ data, is
           <div style={innerStyle} className="bg-white relative shadow-none" id="certificate-print-area">
             {/* Background Image */}
             <div className="absolute inset-0 w-full h-full" style={{ zIndex: 0 }}>
-              <img src={bgImg} alt="Certificate Background" className="w-full h-full object-cover" />
+              <img src={bgImg} alt="Certificate Background" className="w-full h-full object-cover" width="1414" height="970" />
             </div>
 
             {/* Recipient Name */}
             <div 
               className="absolute left-1/2 -translate-x-1/2 text-center flex items-center justify-center" 
               style={{ 
-                top: isGenerating ? '365px' : '400px', 
+                top: '400px', 
                 width: '1200px', 
                 height: '160px',
                 zIndex: 10 
@@ -370,7 +370,7 @@ export const CertificatePreview: React.FC<CertificatePreviewProps> = ({ data, is
               className="absolute text-center" 
               style={{ 
                 left: '262px', 
-                top: isGenerating ? '695px' : '715px', 
+                top: '715px', 
                 width: '260px', 
                 zIndex: 10 
               }}
@@ -385,7 +385,7 @@ export const CertificatePreview: React.FC<CertificatePreviewProps> = ({ data, is
               className="absolute text-center" 
               style={{ 
                 left: '854px', 
-                top: isGenerating ? '695px' : '715px', 
+                top: '715px', 
                 width: '260px', 
                 zIndex: 10 
               }}
