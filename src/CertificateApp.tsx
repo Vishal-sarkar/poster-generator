@@ -566,14 +566,16 @@ export default function CertificateApp() {
         onclone: (clonedDoc) => {
           const clonedEl = clonedDoc.getElementById(element.id);
           if (clonedEl) {
+            clonedEl.style.position = 'relative';
+            clonedEl.style.left = '0px';
+            clonedEl.style.top = '0px';
             clonedEl.style.width = '1414px';
             clonedEl.style.height = '970px';
             clonedEl.style.maxWidth = 'none';
             clonedEl.style.maxHeight = 'none';
             clonedEl.style.transform = 'none';
-            clonedEl.style.position = 'absolute';
-            clonedEl.style.top = '0px';
-            clonedEl.style.left = '0px';
+            clonedEl.style.opacity = '1';
+            clonedEl.style.visibility = 'visible';
 
             // Ensure background images fill 1414x970 in the memory snapshot on iOS WebKit
             const images = clonedEl.querySelectorAll('img');
@@ -593,6 +595,7 @@ export default function CertificateApp() {
       restoreStyles();
     }
   };
+
 
 
   // Upload activity proof image to Cloudflare R2
@@ -1420,21 +1423,23 @@ export default function CertificateApp() {
         )}
       </AnimatePresence>
 
-      {/* Hidden 1:1 high-resolution preview container for perfect html2canvas capture */}
+            {/* Hidden 1:1 high-resolution preview container for perfect html2canvas capture */}
       <div 
         className="fixed pointer-events-none overflow-hidden" 
         style={{ 
-          zIndex: -1000, 
-          left: '-2000px', 
-          top: '-2000px', 
+          zIndex: -9999, 
+          left: '0px', 
+          top: '0px', 
           width: '1414px', 
           height: '970px',
+          opacity: 0,
           backgroundColor: '#ffffff'
         }} 
         id="export-capture-root"
       >
         <CertificatePreview data={data} isGenerating={true} />
       </div>
+
     </div>
   );
 }
