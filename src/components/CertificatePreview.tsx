@@ -11,9 +11,9 @@ import certNavyGoldBg from '../../assets/cert_navy_gold_bg.png';
 // @ts-ignore
 import certYouthDayBg from '../../assets/cert_youth_day_bg.svg';
 // @ts-ignore
-import certIndependenceDayBg from '../../assets/cert_independence_day_bg.jpg';
+import certIndependenceDayBg from '../../assets/cert_independence_day_bg.svg';
 // @ts-ignore
-import certIndependenceDayCyclingBg from '../../assets/cert_independence_day_cycling_bg.jpg';
+import certIndependenceDayCyclingBg from '../../assets/cert_independence_day_cycling_bg.svg';
 
 const formatDate = (dateStr: string) => {
   if (!dateStr) return '';
