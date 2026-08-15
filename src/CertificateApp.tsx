@@ -547,6 +547,33 @@ export default function CertificateApp() {
 
   // Helper to capture certificate canvas with exact coordinates & CORS support
   const captureCertificateCanvas = async (element: HTMLElement): Promise<HTMLCanvasElement> => {
+    // 1. Pre-rasterize SVG images to 2x high-res PNG for iOS WebKit compatibility
+    const images = Array.from(element.querySelectorAll('img'));
+    for (const img of images) {
+      if (img.src && (img.src.includes('.svg') || img.src.startsWith('data:image/svg+xml'))) {
+        try {
+          const tempImg = new Image();
+          tempImg.crossOrigin = 'anonymous';
+          await new Promise((resolve) => {
+            tempImg.onload = resolve;
+            tempImg.onerror = resolve;
+            tempImg.src = img.src;
+          });
+
+          const c = document.createElement('canvas');
+          c.width = 2828; // 2x DPI high-resolution canvas
+          c.height = 1940;
+          const ctx = c.getContext('2d');
+          if (ctx) {
+            ctx.drawImage(tempImg, 0, 0, 2828, 1940);
+            img.src = c.toDataURL('image/png');
+          }
+        } catch (e) {
+          console.warn('SVG pre-rasterize failed:', e);
+        }
+      }
+    }
+
     const restoreStyles = await sanitizeStylesheets();
     try {
       const canvas = await html2canvas(element, {
@@ -564,7 +591,7 @@ export default function CertificateApp() {
         x: 0,
         y: 0,
         onclone: (clonedDoc) => {
-          // 1. Force cloned document root and body to 1414px
+          // Force document body & root to 1414px
           clonedDoc.documentElement.style.width = '1414px';
           clonedDoc.documentElement.style.minWidth = '1414px';
           clonedDoc.body.style.width = '1414px';
@@ -585,7 +612,7 @@ export default function CertificateApp() {
             clonedEl.style.opacity = '1';
             clonedEl.style.visibility = 'visible';
 
-            // 2. Expand all descendant wrapper divs so w-full flex items don't shrink to 390px on iOS WebKit
+            // Expand all descendant wrapper divs so w-full flex items don't shrink to 390px on iOS WebKit
             const allDivs = clonedEl.querySelectorAll('div');
             allDivs.forEach((div) => {
               div.style.maxWidth = 'none';
@@ -595,9 +622,9 @@ export default function CertificateApp() {
               }
             });
 
-            // 3. Ensure background images fill full 1414x970 canvas
-            const images = clonedEl.querySelectorAll('img');
-            images.forEach((img) => {
+            // Ensure background images fill full 1414x970 canvas
+            const clonedImages = clonedEl.querySelectorAll('img');
+            clonedImages.forEach((img) => {
               img.style.width = '1414px';
               img.style.height = '970px';
               img.style.minWidth = '1414px';
