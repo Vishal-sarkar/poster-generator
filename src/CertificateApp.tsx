@@ -564,9 +564,17 @@ export default function CertificateApp() {
         x: 0,
         y: 0,
         onclone: (clonedDoc) => {
+          // Force document body & root to 1414px so WebKit iframe doesn't shrink body on iOS
+          clonedDoc.documentElement.style.width = '1414px';
+          clonedDoc.documentElement.style.minWidth = '1414px';
+          clonedDoc.body.style.width = '1414px';
+          clonedDoc.body.style.minWidth = '1414px';
+          clonedDoc.body.style.maxWidth = 'none';
+          clonedDoc.body.style.overflow = 'visible';
+
           const clonedEl = clonedDoc.getElementById(element.id);
           if (clonedEl) {
-            clonedEl.style.position = 'relative';
+            clonedEl.style.position = 'absolute';
             clonedEl.style.left = '0px';
             clonedEl.style.top = '0px';
             clonedEl.style.width = '1414px';
@@ -577,7 +585,16 @@ export default function CertificateApp() {
             clonedEl.style.opacity = '1';
             clonedEl.style.visibility = 'visible';
 
-            // Ensure background images fill 1414x970 in the memory snapshot on iOS WebKit
+            // Expand all parent elements up to body
+            let parent = clonedEl.parentElement;
+            while (parent && parent !== clonedDoc.body) {
+              parent.style.width = '1414px';
+              parent.style.minWidth = '1414px';
+              parent.style.maxWidth = 'none';
+              parent.style.overflow = 'visible';
+              parent = parent.parentElement;
+            }
+
             const images = clonedEl.querySelectorAll('img');
             images.forEach((img) => {
               img.style.width = '1414px';
@@ -595,6 +612,8 @@ export default function CertificateApp() {
       restoreStyles();
     }
   };
+
+
 
 
 

@@ -47,8 +47,9 @@ interface CertificatePreviewProps {
 }
 
 export const CertificatePreview: React.FC<CertificatePreviewProps> = ({ data, isGenerating = false }) => {
-  const containerRef = useRef<HTMLDivElement>(null);
+     const containerRef = useRef<HTMLDivElement>(null);
   const [scale, setScale] = useState(() => {
+    if (isGenerating) return 1; // <--- Prevents scale from initializing to 0.25 on iOS
     if (typeof window !== 'undefined') {
       const isMobile = window.innerWidth < 768;
       const estimateWidth = isMobile ? window.innerWidth - 32 : (window.innerWidth * 7 / 12) - 48;
@@ -57,6 +58,8 @@ export const CertificatePreview: React.FC<CertificatePreviewProps> = ({ data, is
     }
     return 1;
   });
+
+
 
   // Responsive scaling logic
   useEffect(() => {
