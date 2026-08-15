@@ -256,11 +256,17 @@ export const CertificatePreview: React.FC<CertificatePreviewProps> = ({ data, is
     );
   }
 
-  if (data.selectedTemplateId === '2') {
+    if (data.selectedTemplateId === '2') {
     return (
-      <div ref={containerRef} className="w-full flex items-start justify-start select-none" id="cert-preview-wrapper">
+      <div 
+        ref={containerRef} 
+        className="w-full flex items-start justify-start select-none" 
+        style={isGenerating ? { width: '1414px', minWidth: '1414px' } : undefined}
+        id="cert-preview-wrapper"
+      >
         <div style={wrapperStyle} className="transition-all duration-200">
           <div style={innerStyle} className="bg-white relative shadow-none" id="certificate-print-area">
+
                         {/* Background Image */}
             <div className="absolute inset-0 w-full h-full" style={{ zIndex: 0 }}>
               <img 
