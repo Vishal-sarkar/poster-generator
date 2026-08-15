@@ -1252,25 +1252,11 @@ export default function CertificateApp() {
 
 
                 <div className="w-full flex-1 flex items-center justify-center bg-[#F1F5F9] border border-[#E2E8F0] rounded-sm overflow-hidden" id="final-artifact-wrapper">
-                  {generatedImgUrl ? (
-                    <img 
-                      src={generatedImgUrl} 
-                      alt="Personalized Achievement Certificate" 
-                      className="max-w-full h-auto border border-[#E2E8F0] rounded-sm shadow-sm" 
-                      id="compiled-certificate-image"
-                      style={{ aspectRatio: '1414/970' }}
-                    />
-                  ) : isGenerating ? (
-                    <div className="flex flex-col items-center justify-center py-20 text-[#64748B]">
-                      <RefreshCw className="w-8 h-8 animate-spin mb-2 text-[#94A3B8]" />
-                      <p className="text-xs font-bold uppercase">Preparing certificate artifact...</p>
-                    </div>
-                  ) : (
-                    <div className="w-full h-full flex items-center justify-center">
-                      <CertificatePreview data={data} isGenerating={false} />
-                    </div>
-                  )}
+                  <div className="w-full h-full flex items-center justify-center">
+                    <CertificatePreview data={data} isGenerating={false} />
+                  </div>
                 </div>
+
               </div>
 
               {/* Right Column: Flat Export Tool panel */}
