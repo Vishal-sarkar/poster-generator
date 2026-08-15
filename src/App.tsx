@@ -797,7 +797,6 @@ function PosterGenerator() {
           const shareData = {
             files: [file],
             title: `${state.name}'s Finisher Poster`,
-            text: `I just completed my target of ${state.target} in the ${challengeName}! Check out my finisher poster! ${emojis}`,
           };
 
           if (navigator.canShare(shareData)) {

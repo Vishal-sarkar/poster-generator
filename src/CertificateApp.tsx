@@ -979,12 +979,10 @@ export default function CertificateApp() {
         await navigator.share({
           files: [file],
           title: 'My Achievement Certificate',
-          text: `Check out my personalized certificate for successfully completing the ${data.rideName || 'achievement challenge'}!`,
         });
       } else if (navigator.share) {
         await navigator.share({
           title: 'My Achievement Certificate',
-          text: `I completed my ride! Distance: ${data.distance} ${data.distanceUnit} in ${data.duration}.`,
           url: window.location.href,
         });
       } else {
