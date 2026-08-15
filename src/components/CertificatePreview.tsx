@@ -11,9 +11,9 @@ import certNavyGoldBg from '../../assets/cert_navy_gold_bg.png';
 // @ts-ignore
 import certYouthDayBg from '../../assets/cert_youth_day_bg.svg';
 // @ts-ignore
-import certIndependenceDayBg from '../../assets/cert_independence_day_bg.jpg';
+import certIndependenceDayBg from '../../assets/cert_independence_day_bg.svg';
 // @ts-ignore
-import certIndependenceDayCyclingBg from '../../assets/cert_independence_day_cycling_bg.jpg';
+import certIndependenceDayCyclingBg from '../../assets/cert_independence_day_cycling_bg.svg';
 
 const formatDate = (dateStr: string) => {
   if (!dateStr) return '';
@@ -47,8 +47,9 @@ interface CertificatePreviewProps {
 }
 
 export const CertificatePreview: React.FC<CertificatePreviewProps> = ({ data, isGenerating = false }) => {
-  const containerRef = useRef<HTMLDivElement>(null);
+     const containerRef = useRef<HTMLDivElement>(null);
   const [scale, setScale] = useState(() => {
+    if (isGenerating) return 1; // <--- Prevents scale from initializing to 0.25 on iOS
     if (typeof window !== 'undefined') {
       const isMobile = window.innerWidth < 768;
       const estimateWidth = isMobile ? window.innerWidth - 32 : (window.innerWidth * 7 / 12) - 48;
@@ -57,6 +58,8 @@ export const CertificatePreview: React.FC<CertificatePreviewProps> = ({ data, is
     }
     return 1;
   });
+
+
 
   // Responsive scaling logic
   useEffect(() => {
@@ -253,15 +256,29 @@ export const CertificatePreview: React.FC<CertificatePreviewProps> = ({ data, is
     );
   }
 
-  if (data.selectedTemplateId === '2') {
+    if (data.selectedTemplateId === '2') {
     return (
-      <div ref={containerRef} className="w-full flex items-start justify-start select-none" id="cert-preview-wrapper">
+      <div 
+        ref={containerRef} 
+        className="w-full flex items-start justify-start select-none" 
+        style={isGenerating ? { width: '1414px', minWidth: '1414px' } : undefined}
+        id="cert-preview-wrapper"
+      >
         <div style={wrapperStyle} className="transition-all duration-200">
           <div style={innerStyle} className="bg-white relative shadow-none" id="certificate-print-area">
-            {/* Background Image */}
+
+                        {/* Background Image */}
             <div className="absolute inset-0 w-full h-full" style={{ zIndex: 0 }}>
-              <img src={certYouthDayBg} alt="Certificate Background" className="w-full h-full object-cover" />
+              <img 
+                src={certYouthDayBg} 
+                alt="Certificate Background" 
+                className="w-full h-full object-cover" 
+                style={{ width: '1414px', height: '970px', maxWidth: 'none', maxHeight: 'none' }}
+                width="1414" 
+                height="970" 
+              />
             </div>
+
 
             {/* Recipient Name */}
             <div 

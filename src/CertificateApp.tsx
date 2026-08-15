@@ -547,6 +547,33 @@ export default function CertificateApp() {
 
   // Helper to capture certificate canvas with exact coordinates & CORS support
   const captureCertificateCanvas = async (element: HTMLElement): Promise<HTMLCanvasElement> => {
+    // 1. Pre-rasterize SVG images to 2x high-res PNG for iOS WebKit compatibility
+    const images = Array.from(element.querySelectorAll('img'));
+    for (const img of images) {
+      if (img.src && (img.src.includes('.svg') || img.src.startsWith('data:image/svg+xml'))) {
+        try {
+          const tempImg = new Image();
+          tempImg.crossOrigin = 'anonymous';
+          await new Promise((resolve) => {
+            tempImg.onload = resolve;
+            tempImg.onerror = resolve;
+            tempImg.src = img.src;
+          });
+
+          const c = document.createElement('canvas');
+          c.width = 2828; // 2x DPI high-resolution canvas
+          c.height = 1940;
+          const ctx = c.getContext('2d');
+          if (ctx) {
+            ctx.drawImage(tempImg, 0, 0, 2828, 1940);
+            img.src = c.toDataURL('image/png');
+          }
+        } catch (e) {
+          console.warn('SVG pre-rasterize failed:', e);
+        }
+      }
+    }
+
     const restoreStyles = await sanitizeStylesheets();
     try {
       const canvas = await html2canvas(element, {
@@ -563,12 +590,61 @@ export default function CertificateApp() {
         scrollY: 0,
         x: 0,
         y: 0,
+        onclone: (clonedDoc) => {
+          // Force document body & root to 1414px
+          clonedDoc.documentElement.style.width = '1414px';
+          clonedDoc.documentElement.style.minWidth = '1414px';
+          clonedDoc.body.style.width = '1414px';
+          clonedDoc.body.style.minWidth = '1414px';
+          clonedDoc.body.style.maxWidth = 'none';
+          clonedDoc.body.style.overflow = 'visible';
+
+          const clonedEl = clonedDoc.getElementById(element.id);
+          if (clonedEl) {
+            clonedEl.style.position = 'absolute';
+            clonedEl.style.left = '0px';
+            clonedEl.style.top = '0px';
+            clonedEl.style.width = '1414px';
+            clonedEl.style.height = '970px';
+            clonedEl.style.maxWidth = 'none';
+            clonedEl.style.maxHeight = 'none';
+            clonedEl.style.transform = 'none';
+            clonedEl.style.opacity = '1';
+            clonedEl.style.visibility = 'visible';
+
+            // Expand all descendant wrapper divs so w-full flex items don't shrink to 390px on iOS WebKit
+            const allDivs = clonedEl.querySelectorAll('div');
+            allDivs.forEach((div) => {
+              div.style.maxWidth = 'none';
+              if (div.id === 'cert-preview-wrapper' || div.id === 'certificate-print-area' || div.classList.contains('w-full')) {
+                div.style.width = '1414px';
+                div.style.minWidth = '1414px';
+              }
+            });
+
+            // Ensure background images fill full 1414x970 canvas
+            const clonedImages = clonedEl.querySelectorAll('img');
+            clonedImages.forEach((img) => {
+              img.style.width = '1414px';
+              img.style.height = '970px';
+              img.style.minWidth = '1414px';
+              img.style.minHeight = '970px';
+              img.style.maxWidth = 'none';
+              img.style.maxHeight = 'none';
+            });
+          }
+        },
       });
       return canvas;
     } finally {
       restoreStyles();
     }
   };
+
+
+
+
+
 
   // Upload activity proof image to Cloudflare R2
   const uploadActivityProofToR2 = async (file: File): Promise<string | null> => {
@@ -903,12 +979,10 @@ export default function CertificateApp() {
         await navigator.share({
           files: [file],
           title: 'My Achievement Certificate',
-          text: `Check out my personalized certificate for successfully completing the ${data.rideName || 'achievement challenge'}!`,
         });
       } else if (navigator.share) {
         await navigator.share({
           title: 'My Achievement Certificate',
-          text: `I completed my ride! Distance: ${data.distance} ${data.distanceUnit} in ${data.duration}.`,
           url: window.location.href,
         });
       } else {
@@ -1205,25 +1279,11 @@ export default function CertificateApp() {
 
 
                 <div className="w-full flex-1 flex items-center justify-center bg-[#F1F5F9] border border-[#E2E8F0] rounded-sm overflow-hidden" id="final-artifact-wrapper">
-                  {generatedImgUrl ? (
-                    <img 
-                      src={generatedImgUrl} 
-                      alt="Personalized Achievement Certificate" 
-                      className="max-w-full h-auto border border-[#E2E8F0] rounded-sm shadow-sm" 
-                      id="compiled-certificate-image"
-                      style={{ aspectRatio: '1414/970' }}
-                    />
-                  ) : isGenerating ? (
-                    <div className="flex flex-col items-center justify-center py-20 text-[#64748B]">
-                      <RefreshCw className="w-8 h-8 animate-spin mb-2 text-[#94A3B8]" />
-                      <p className="text-xs font-bold uppercase">Preparing certificate artifact...</p>
-                    </div>
-                  ) : (
-                    <div className="w-full h-full flex items-center justify-center">
-                      <CertificatePreview data={data} isGenerating={false} />
-                    </div>
-                  )}
+                  <div className="w-full h-full flex items-center justify-center">
+                    <CertificatePreview data={data} isGenerating={false} />
+                  </div>
                 </div>
+
               </div>
 
               {/* Right Column: Flat Export Tool panel */}
@@ -1395,21 +1455,23 @@ export default function CertificateApp() {
         )}
       </AnimatePresence>
 
-      {/* Hidden 1:1 high-resolution preview container for perfect html2canvas capture */}
+            {/* Hidden 1:1 high-resolution preview container for perfect html2canvas capture */}
       <div 
         className="fixed pointer-events-none overflow-hidden" 
         style={{ 
-          zIndex: -1000, 
-          left: '-2000px', 
-          top: '-2000px', 
+          zIndex: -9999, 
+          left: '0px', 
+          top: '0px', 
           width: '1414px', 
           height: '970px',
+          opacity: 0,
           backgroundColor: '#ffffff'
         }} 
         id="export-capture-root"
       >
         <CertificatePreview data={data} isGenerating={true} />
       </div>
+
     </div>
   );
 }
