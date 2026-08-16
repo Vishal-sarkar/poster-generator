@@ -16,7 +16,9 @@ import {
   Eye,
   EyeOff,
   Trash2,
-  Plus
+  Plus,
+  ChevronLeft,
+  ChevronRight
 } from 'lucide-react';
 
 interface CertificateLog {
@@ -281,6 +283,8 @@ export default function DashboardApp() {
   const [typeFilter, setTypeFilter] = useState<'all' | 'cycling' | 'walk-running'>('all');
   const [selectedImageUrl, setSelectedImageUrl] = useState<string | null>(null);
   const [showPassword, setShowPassword] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
+  const ITEMS_PER_PAGE = 15;
 
   // Event settings state
   const [eventSettings, setEventSettings] = useState<EventSetting[]>([]);
@@ -481,6 +485,50 @@ export default function DashboardApp() {
 
     return matchesSearch && matchesType;
   });
+
+  // Reset page on search or filter change
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchTerm, typeFilter]);
+
+  // Pagination calculation
+  const totalPages = Math.max(1, Math.ceil(filteredLogs.length / ITEMS_PER_PAGE));
+  const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
+  const paginatedLogs = filteredLogs.slice(startIndex, startIndex + ITEMS_PER_PAGE);
+  const startItem = filteredLogs.length === 0 ? 0 : startIndex + 1;
+  const endItem = Math.min(startIndex + ITEMS_PER_PAGE, filteredLogs.length);
+
+  const getPageNumbers = () => {
+    const pages: (number | string)[] = [];
+    if (totalPages <= 7) {
+      for (let i = 1; i <= totalPages; i++) pages.push(i);
+    } else {
+      pages.push(1);
+      let start = Math.max(2, currentPage - 1);
+      let end = Math.min(totalPages - 1, currentPage + 1);
+
+      if (currentPage <= 3) {
+        end = 4;
+      } else if (currentPage >= totalPages - 2) {
+        start = totalPages - 3;
+      }
+
+      if (start > 2) {
+        pages.push('...');
+      }
+
+      for (let i = start; i <= end; i++) {
+        pages.push(i);
+      }
+
+      if (end < totalPages - 1) {
+        pages.push('...');
+      }
+
+      pages.push(totalPages);
+    }
+    return pages;
+  };
 
   // Calculate statistics metrics
   const totalCount = logs.length;
@@ -926,7 +974,7 @@ export default function DashboardApp() {
                     </td>
                   </tr>
                 ) : (
-                  filteredLogs.map(log => (
+                  paginatedLogs.map(log => (
                     <tr key={log.id} className="hover:bg-[#F8FAFC]/50 transition-colors">
                       <td className="p-3 pl-4 font-bold uppercase">{log.name}</td>
                       <td className="p-3 font-mono">{log.phone_number}</td>
@@ -1003,6 +1051,68 @@ export default function DashboardApp() {
               </tbody>
             </table>
           </div>
+
+          {/* Pagination Controls */}
+          {!isLoading && filteredLogs.length > 0 && (
+            <div className="px-4 py-3 bg-[#F8FAFC] border-t-2 border-[#E2E8F0] flex flex-col sm:flex-row items-center justify-between gap-3 text-xs font-semibold text-[#64748B]">
+              <div className="font-mono text-[11px] uppercase tracking-wider text-[#64748B]">
+                Showing <span className="font-bold text-[#1A2B4C]">{startItem}</span> to <span className="font-bold text-[#1A2B4C]">{endItem}</span> of <span className="font-bold text-[#1A2B4C]">{filteredLogs.length}</span> records
+              </div>
+
+              <div className="flex items-center gap-1">
+                <button
+                  type="button"
+                  onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                  disabled={currentPage === 1}
+                  className={`px-2.5 py-1 rounded-sm border-2 text-[10px] font-black uppercase tracking-wider flex items-center gap-1 transition-colors ${
+                    currentPage === 1
+                      ? 'bg-slate-100 text-slate-400 border-slate-200 cursor-not-allowed'
+                      : 'bg-white text-[#1A2B4C] border-[#E2E8F0] hover:bg-[#F8FAFC] hover:border-[#1A2B4C] cursor-pointer'
+                  }`}
+                >
+                  <ChevronLeft className="w-3.5 h-3.5" />
+                  Prev
+                </button>
+
+                <div className="flex items-center gap-1 px-1">
+                  {getPageNumbers().map((page, idx) => (
+                    typeof page === 'number' ? (
+                      <button
+                        key={idx}
+                        type="button"
+                        onClick={() => setCurrentPage(page)}
+                        className={`w-7 h-7 flex items-center justify-center rounded-sm border-2 text-[10px] font-black transition-colors ${
+                          currentPage === page
+                            ? 'bg-[#1A2B4C] text-white border-[#1A2B4C]'
+                            : 'bg-white text-[#1A2B4C] border-[#E2E8F0] hover:bg-[#F8FAFC] hover:border-[#1A2B4C] cursor-pointer'
+                        }`}
+                      >
+                        {page}
+                      </button>
+                    ) : (
+                      <span key={idx} className="px-1 text-slate-400 font-bold text-[10px]">
+                        {page}
+                      </span>
+                    )
+                  ))}
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+                  disabled={currentPage === totalPages}
+                  className={`px-2.5 py-1 rounded-sm border-2 text-[10px] font-black uppercase tracking-wider flex items-center gap-1 transition-colors ${
+                    currentPage === totalPages
+                      ? 'bg-slate-100 text-slate-400 border-slate-200 cursor-not-allowed'
+                      : 'bg-white text-[#1A2B4C] border-[#E2E8F0] hover:bg-[#F8FAFC] hover:border-[#1A2B4C] cursor-pointer'
+                  }`}
+                >
+                  Next
+                  <ChevronRight className="w-3.5 h-3.5" />
+                </button>
+              </div>
+            </div>
+          )}
         </div>
       </main>
 
