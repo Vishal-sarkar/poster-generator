@@ -284,7 +284,7 @@ export default function DashboardApp() {
   const [selectedImageUrl, setSelectedImageUrl] = useState<string | null>(null);
   const [showPassword, setShowPassword] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
-  const ITEMS_PER_PAGE = 15;
+  const ITEMS_PER_PAGE = 10;
 
   // Event settings state
   const [eventSettings, setEventSettings] = useState<EventSetting[]>([]);
