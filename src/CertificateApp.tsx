@@ -197,6 +197,12 @@ export default function CertificateApp() {
   const [showErrors, setShowErrors] = useState(false);
   const [isUploadingProof, setIsUploadingProof] = useState(false);
 
+  // Download Progress Bar states
+  const [isDownloading, setIsDownloading] = useState(false);
+  const [downloadProgress, setDownloadProgress] = useState(0);
+  const [downloadType, setDownloadType] = useState<'png' | 'pdf' | 'share' | null>(null);
+  const [downloadStatus, setDownloadStatus] = useState('');
+
   // Event settings state for lock validation
   const [eventSetting, setEventSetting] = useState<{ event_name: string; release_date: string | null } | null>(null);
   const [isCheckingRestrictions, setIsCheckingRestrictions] = useState(true);
@@ -830,28 +836,42 @@ export default function CertificateApp() {
 
   // Download PDF
   const handleDownloadPDF = async () => {
+    if (isDownloading) return;
+    setIsDownloading(true);
+    setDownloadType('pdf');
+    setDownloadProgress(10);
+    setDownloadStatus('Initializing PDF preparation...');
+
     let imgUrl = generatedImgUrl;
 
     if (!imgUrl) {
-      setIsGenerating(true);
-      setToastMessage('Compiling high-resolution PDF...');
-      setShowSuccessToast(true);
-      await new Promise((resolve) => setTimeout(resolve, 300));
+      setDownloadProgress(25);
+      setDownloadStatus('Rasterizing high-resolution canvas & fonts...');
+      await new Promise((resolve) => setTimeout(resolve, 200));
 
       const previewArea = document.getElementById('export-capture-root') || document.getElementById('certificate-print-area');
       if (previewArea) {
         try {
+          setDownloadProgress(45);
+          setDownloadStatus('Rendering graphics & certificate typography...');
           const canvas = await captureCertificateCanvas(previewArea);
+          setDownloadProgress(70);
+          setDownloadStatus('Converting canvas to image data...');
           imgUrl = canvas.toDataURL('image/png');
           setGeneratedImgUrl(imgUrl);
         } catch (err) {
           console.error('Error rendering PDF canvas on-the-fly:', err);
         }
       }
-      setIsGenerating(false);
+    } else {
+      setDownloadProgress(60);
+      setDownloadStatus('Using pre-compiled certificate canvas...');
+      await new Promise((resolve) => setTimeout(resolve, 200));
     }
 
     if (!imgUrl) {
+      setIsDownloading(false);
+      setDownloadProgress(0);
       setToastMessage('Could not render PDF. Please retry.');
       setShowSuccessToast(true);
       setTimeout(() => setShowSuccessToast(false), 3000);
@@ -859,7 +879,10 @@ export default function CertificateApp() {
     }
 
     try {
-      // Standard A4 dimensions in landscape: 297mm x 210mm
+      setDownloadProgress(80);
+      setDownloadStatus('Compiling A4 Landscape PDF document...');
+      await new Promise((resolve) => setTimeout(resolve, 200));
+
       const pdf = new jsPDF({
         orientation: 'landscape',
         unit: 'mm',
@@ -868,13 +891,24 @@ export default function CertificateApp() {
       });
 
       pdf.addImage(imgUrl, 'PNG', 0, 0, 297, 210);
+
+      setDownloadProgress(95);
+      setDownloadStatus('Triggering file save...');
+      await new Promise((resolve) => setTimeout(resolve, 200));
+
       pdf.save(`Certificate_${data.name.replace(/\s+/g, '_') || 'Achievement'}.pdf`);
-      
+
+      setDownloadProgress(100);
+      setDownloadStatus('PDF Download Complete!');
+      await new Promise((resolve) => setTimeout(resolve, 500));
+      setIsDownloading(false);
+
       setToastMessage('PDF Saved Successfully!');
       setShowSuccessToast(true);
       setTimeout(() => setShowSuccessToast(false), 3000);
     } catch (e) {
       console.error('Error generating PDF:', e);
+      setIsDownloading(false);
       setToastMessage('Error generating PDF file.');
       setShowSuccessToast(true);
       setTimeout(() => setShowSuccessToast(false), 3000);
@@ -883,28 +917,42 @@ export default function CertificateApp() {
 
   // Download Image
   const handleDownloadImage = async () => {
+    if (isDownloading) return;
+    setIsDownloading(true);
+    setDownloadType('png');
+    setDownloadProgress(10);
+    setDownloadStatus('Initializing PNG download...');
+
     let imgUrl = generatedImgUrl;
 
     if (!imgUrl) {
-      setIsGenerating(true);
-      setToastMessage('Compiling high-resolution PNG...');
-      setShowSuccessToast(true);
-      await new Promise((resolve) => setTimeout(resolve, 300));
+      setDownloadProgress(25);
+      setDownloadStatus('Rasterizing high-resolution canvas & fonts...');
+      await new Promise((resolve) => setTimeout(resolve, 200));
 
       const previewArea = document.getElementById('export-capture-root') || document.getElementById('certificate-print-area');
       if (previewArea) {
         try {
+          setDownloadProgress(50);
+          setDownloadStatus('Rendering graphics & certificate typography...');
           const canvas = await captureCertificateCanvas(previewArea);
+          setDownloadProgress(75);
+          setDownloadStatus('Generating PNG data URL...');
           imgUrl = canvas.toDataURL('image/png');
           setGeneratedImgUrl(imgUrl);
         } catch (err) {
           console.error('Error rendering image canvas on-the-fly:', err);
         }
       }
-      setIsGenerating(false);
+    } else {
+      setDownloadProgress(65);
+      setDownloadStatus('Using pre-compiled certificate canvas...');
+      await new Promise((resolve) => setTimeout(resolve, 200));
     }
 
     if (!imgUrl) {
+      setIsDownloading(false);
+      setDownloadProgress(0);
       setToastMessage('Could not render image. Please retry.');
       setShowSuccessToast(true);
       setTimeout(() => setShowSuccessToast(false), 3000);
@@ -912,6 +960,10 @@ export default function CertificateApp() {
     }
 
     try {
+      setDownloadProgress(90);
+      setDownloadStatus('Preparing browser download link...');
+      await new Promise((resolve) => setTimeout(resolve, 200));
+
       const link = document.createElement('a');
       link.href = imgUrl;
       link.download = `Certificate_${data.name.replace(/\s+/g, '_') || 'Achievement'}.png`;
@@ -919,11 +971,17 @@ export default function CertificateApp() {
       link.click();
       document.body.removeChild(link);
 
+      setDownloadProgress(100);
+      setDownloadStatus('Image Download Complete!');
+      await new Promise((resolve) => setTimeout(resolve, 500));
+      setIsDownloading(false);
+
       setToastMessage('Image Saved Successfully!');
       setShowSuccessToast(true);
       setTimeout(() => setShowSuccessToast(false), 3000);
     } catch (e) {
       console.error('Error downloading image:', e);
+      setIsDownloading(false);
       setToastMessage('Error saving image.');
       setShowSuccessToast(true);
       setTimeout(() => setShowSuccessToast(false), 3000);
@@ -932,29 +990,41 @@ export default function CertificateApp() {
 
   // Native Web Share / Clipboard Fallback
   const handleShareCertificate = async () => {
+    if (isDownloading) return;
+    setIsDownloading(true);
+    setDownloadType('share');
+    setDownloadProgress(10);
+    setDownloadStatus('Preparing shareable image...');
+
     let imgUrl = generatedImgUrl;
 
     if (!imgUrl) {
-      setIsGenerating(true);
-      setToastMessage('Preparing shareable image...');
-      setShowSuccessToast(true);
-      await new Promise((resolve) => setTimeout(resolve, 300));
+      setDownloadProgress(25);
+      setDownloadStatus('Rasterizing high-resolution canvas & fonts...');
+      await new Promise((resolve) => setTimeout(resolve, 200));
 
       const previewArea = document.getElementById('export-capture-root') || document.getElementById('certificate-print-area');
       if (previewArea) {
         try {
+          setDownloadProgress(50);
+          setDownloadStatus('Rendering graphics...');
           const canvas = await captureCertificateCanvas(previewArea);
+          setDownloadProgress(75);
+          setDownloadStatus('Generating share image payload...');
           imgUrl = canvas.toDataURL('image/png');
           setGeneratedImgUrl(imgUrl);
         } catch (err) {
           console.error('Error rendering share canvas on-the-fly:', err);
         }
       }
-      setIsGenerating(false);
+    } else {
+      setDownloadProgress(65);
+      setDownloadStatus('Using pre-compiled certificate canvas...');
+      await new Promise((resolve) => setTimeout(resolve, 200));
     }
 
     if (!imgUrl) {
-      // Direct clipboard share of text fallback if canvas compile failed entirely
+      setIsDownloading(false);
       try {
         await navigator.clipboard.writeText(
           `I completed my ${data.rideName || 'ride'}! Distance: ${data.distance} ${data.distanceUnit} in ${data.duration}. Generated with Achievement Certificate Generator.`
@@ -971,16 +1041,25 @@ export default function CertificateApp() {
     }
 
     try {
+      setDownloadProgress(85);
+      setDownloadStatus('Preparing share payload...');
       const response = await fetch(imgUrl);
       const blob = await response.blob();
       const file = new File([blob], `Certificate_${data.name.replace(/\s+/g, '_') || 'Achievement'}.png`, { type: 'image/png' });
 
+      setDownloadProgress(95);
+      setDownloadStatus('Launching native share menu...');
+      await new Promise((resolve) => setTimeout(resolve, 150));
+
       if (navigator.canShare && navigator.canShare({ files: [file] })) {
+        setDownloadProgress(100);
+        setDownloadStatus('Opening Share Sheet...');
         await navigator.share({
           files: [file],
           title: 'My Achievement Certificate',
         });
       } else if (navigator.share) {
+        setDownloadProgress(100);
         await navigator.share({
           title: 'My Achievement Certificate',
           url: window.location.href,
@@ -988,10 +1067,14 @@ export default function CertificateApp() {
       } else {
         throw new Error('Web Share not supported');
       }
+
+      await new Promise((resolve) => setTimeout(resolve, 400));
+      setIsDownloading(false);
     } catch (e) {
-      // Ignore user cancellation/abort exceptions
       const errName = (e && (e as any).name || '').toLowerCase();
       const errMsg = (e && (e as any).message || '').toLowerCase();
+      setIsDownloading(false);
+
       if (
         errName.includes('abort') || 
         errName.includes('cancel') || 
@@ -1297,10 +1380,17 @@ export default function CertificateApp() {
                       type="button"
                       id="btn-download-image"
                       onClick={handleDownloadImage}
-                      className="w-full py-2.5 px-4 bg-[#1A2B4C] hover:bg-[#2D4263] text-white font-black text-xs uppercase tracking-widest rounded-sm border-2 border-[#1A2B4C] flex items-center justify-between transition-colors cursor-pointer"
+                      disabled={isDownloading}
+                      className={`w-full py-2.5 px-4 bg-[#1A2B4C] hover:bg-[#2D4263] text-white font-black text-xs uppercase tracking-widest rounded-sm border-2 border-[#1A2B4C] flex items-center justify-between transition-colors ${
+                        isDownloading ? 'opacity-60 cursor-not-allowed' : 'cursor-pointer'
+                      }`}
                     >
                       <span className="flex items-center gap-2">
-                        <Download className="w-4 h-4" />
+                        {isDownloading && downloadType === 'png' ? (
+                          <RefreshCw className="w-4 h-4 animate-spin text-[#C5A059]" />
+                        ) : (
+                          <Download className="w-4 h-4" />
+                        )}
                         Download as Image (PNG)
                       </span>
                       <span className="text-[9px] font-mono opacity-80">PNG</span>
@@ -1311,10 +1401,17 @@ export default function CertificateApp() {
                       type="button"
                       id="btn-download-pdf"
                       onClick={handleDownloadPDF}
-                      className="w-full py-2.5 px-4 bg-[#C5A059] hover:bg-[#B28B45] text-white font-black text-xs uppercase tracking-widest rounded-sm border-2 border-[#C5A059] flex items-center justify-between transition-colors cursor-pointer"
+                      disabled={isDownloading}
+                      className={`w-full py-2.5 px-4 bg-[#C5A059] hover:bg-[#B28B45] text-white font-black text-xs uppercase tracking-widest rounded-sm border-2 border-[#C5A059] flex items-center justify-between transition-colors ${
+                        isDownloading ? 'opacity-60 cursor-not-allowed' : 'cursor-pointer'
+                      }`}
                     >
                       <span className="flex items-center gap-2">
-                        <FileText className="w-4 h-4" />
+                        {isDownloading && downloadType === 'pdf' ? (
+                          <RefreshCw className="w-4 h-4 animate-spin text-white" />
+                        ) : (
+                          <FileText className="w-4 h-4" />
+                        )}
                         Download as PDF
                       </span>
                       <span className="text-[9px] font-mono opacity-80">A4 Landscape</span>
@@ -1325,10 +1422,17 @@ export default function CertificateApp() {
                       type="button"
                       id="btn-share-certificate"
                       onClick={handleShareCertificate}
-                      className="w-full py-2.5 px-4 bg-white hover:bg-[#F8FAFC] text-[#1A2B4C] font-black text-xs uppercase tracking-widest rounded-sm border-2 border-[#1A2B4C] flex items-center justify-between transition-colors cursor-pointer"
+                      disabled={isDownloading}
+                      className={`w-full py-2.5 px-4 bg-white hover:bg-[#F8FAFC] text-[#1A2B4C] font-black text-xs uppercase tracking-widest rounded-sm border-2 border-[#1A2B4C] flex items-center justify-between transition-colors ${
+                        isDownloading ? 'opacity-60 cursor-not-allowed' : 'cursor-pointer'
+                      }`}
                     >
                       <span className="flex items-center gap-2">
-                        <Share2 className="w-4 h-4 text-[#1A2B4C]" />
+                        {isDownloading && downloadType === 'share' ? (
+                          <RefreshCw className="w-4 h-4 animate-spin text-[#1A2B4C]" />
+                        ) : (
+                          <Share2 className="w-4 h-4 text-[#1A2B4C]" />
+                        )}
                         Share / Copy Details
                       </span>
                       <ExternalLink className="w-3.5 h-3.5 text-[#1A2B4C]" />
@@ -1449,6 +1553,84 @@ export default function CertificateApp() {
               {/* Drawer Footer */}
               <div className="p-4 bg-[#F8FAFC] border-t-2 border-[#E2E8F0] text-center">
                 <p className="text-[9px] text-[#64748B] font-mono uppercase tracking-wider">Persisted offline in your local browser sandbox.</p>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* Download Progress Modal Overlay */}
+      <AnimatePresence>
+        {isDownloading && (
+          <div className="fixed inset-0 bg-[#0F172A]/70 backdrop-blur-sm z-[9999] flex items-center justify-center p-4">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95, y: 10 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 10 }}
+              className="bg-white border-2 border-[#1A2B4C] rounded-lg shadow-2xl p-6 max-w-md w-full overflow-hidden relative"
+            >
+              {/* Top Accent Line */}
+              <div className="absolute top-0 left-0 right-0 h-1.5 bg-gradient-to-r from-[#1A2B4C] via-[#C5A059] to-[#1A2B4C]" />
+
+              <div className="flex items-center gap-3 mb-4">
+                <div className="w-10 h-10 rounded-full bg-[#1A2B4C]/10 border border-[#1A2B4C]/20 flex items-center justify-center text-[#1A2B4C] flex-shrink-0">
+                  {downloadType === 'pdf' ? (
+                    <FileText className="w-5 h-5 text-[#C5A059]" />
+                  ) : downloadType === 'png' ? (
+                    <Download className="w-5 h-5 text-[#1A2B4C]" />
+                  ) : (
+                    <Share2 className="w-5 h-5 text-[#1A2B4C]" />
+                  )}
+                </div>
+                <div>
+                  <h3 className="text-sm font-black uppercase text-[#1A2B4C] tracking-wide">
+                    {downloadType === 'pdf'
+                      ? 'Preparing PDF Certificate'
+                      : downloadType === 'png'
+                      ? 'Preparing PNG Image'
+                      : 'Preparing Share Package'}
+                  </h3>
+                  <p className="text-[11px] text-[#64748B] font-medium mt-0.5">
+                    Please wait while your high-resolution file is being compiled.
+                  </p>
+                </div>
+              </div>
+
+              {/* Progress Bar Container */}
+              <div className="space-y-2 my-4">
+                <div className="flex justify-between items-center text-xs font-mono font-bold">
+                  <span className="text-[#1A2B4C] truncate pr-2">{downloadStatus || 'Processing...'}</span>
+                  <span className="text-[#C5A059] flex-shrink-0 font-mono">{downloadProgress}%</span>
+                </div>
+
+                <div className="w-full h-3 bg-[#F1F5F9] rounded-full border border-[#E2E8F0] overflow-hidden relative p-0.5">
+                  <motion.div
+                    className="h-full bg-gradient-to-r from-[#1A2B4C] to-[#C5A059] rounded-full transition-all duration-300 ease-out"
+                    style={{ width: `${downloadProgress}%` }}
+                  />
+                </div>
+              </div>
+
+              {/* Phased Checklist */}
+              <div className="space-y-1.5 pt-2 border-t border-[#E2E8F0]">
+                <div className="flex items-center gap-2 text-[10px] uppercase font-bold tracking-wider">
+                  <div className={`w-2 h-2 rounded-full ${downloadProgress >= 25 ? 'bg-emerald-500' : 'bg-amber-400 animate-pulse'}`} />
+                  <span className={downloadProgress >= 25 ? 'text-[#1A2B4C]' : 'text-[#94A3B8]'}>
+                    Step 1: Rasterize Graphics & Assets
+                  </span>
+                </div>
+                <div className="flex items-center gap-2 text-[10px] uppercase font-bold tracking-wider">
+                  <div className={`w-2 h-2 rounded-full ${downloadProgress >= 70 ? 'bg-emerald-500' : downloadProgress >= 25 ? 'bg-amber-400 animate-pulse' : 'bg-gray-200'}`} />
+                  <span className={downloadProgress >= 70 ? 'text-[#1A2B4C]' : 'text-[#94A3B8]'}>
+                    Step 2: Compile High-Res Canvas
+                  </span>
+                </div>
+                <div className="flex items-center gap-2 text-[10px] uppercase font-bold tracking-wider">
+                  <div className={`w-2 h-2 rounded-full ${downloadProgress >= 100 ? 'bg-emerald-500' : downloadProgress >= 70 ? 'bg-amber-400 animate-pulse' : 'bg-gray-200'}`} />
+                  <span className={downloadProgress >= 100 ? 'text-[#1A2B4C]' : 'text-[#94A3B8]'}>
+                    Step 3: Export & Download File
+                  </span>
+                </div>
               </div>
             </motion.div>
           </div>
