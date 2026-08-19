@@ -278,6 +278,10 @@ export default function DashboardApp() {
 
   // Dashboard Data State
   const [logs, setLogs] = useState<CertificateLog[]>([]);
+  const [totalMatchingCount, setTotalMatchingCount] = useState(0);
+  const [totalCertificatesCount, setTotalCertificatesCount] = useState(0);
+  const [cyclingCount, setCyclingCount] = useState(0);
+  const [walkRunCount, setWalkRunCount] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [typeFilter, setTypeFilter] = useState<'all' | 'cycling' | 'walk-running'>('all');
@@ -309,21 +313,58 @@ export default function DashboardApp() {
 
   useEffect(() => {
     if (isAuthenticated) {
-      fetchLogs();
+      fetchStats();
       fetchEventSettings();
     }
   }, [isAuthenticated]);
 
+  useEffect(() => {
+    if (isAuthenticated) {
+      fetchLogs();
+    }
+  }, [isAuthenticated, currentPage, searchTerm, typeFilter]);
+
+  const fetchStats = async () => {
+    try {
+      const [totalRes, cyclingRes, walkRunRes] = await Promise.all([
+        supabase.from('certificates').select('*', { count: 'exact', head: true }),
+        supabase.from('certificates').select('*', { count: 'exact', head: true }).eq('certificate_type', 'cycling'),
+        supabase.from('certificates').select('*', { count: 'exact', head: true }).eq('certificate_type', 'walk-running'),
+      ]);
+      if (totalRes.count !== null) setTotalCertificatesCount(totalRes.count);
+      if (cyclingRes.count !== null) setCyclingCount(cyclingRes.count);
+      if (walkRunRes.count !== null) setWalkRunCount(walkRunRes.count);
+    } catch (e) {
+      console.error('Error fetching stats:', e);
+    }
+  };
+
   const fetchLogs = async () => {
     setIsLoading(true);
     try {
-      const { data, error } = await supabase
+      let query = supabase
         .from('certificates')
-        .select('*')
-        .order('created_at', { ascending: false });
+        .select('*', { count: 'exact' });
+
+      if (typeFilter !== 'all') {
+        query = query.eq('certificate_type', typeFilter);
+      }
+
+      if (searchTerm.trim()) {
+        const term = `%${searchTerm.trim()}%`;
+        query = query.or(`name.ilike.${term},phone_number.ilike.${term},email.ilike.${term}`);
+      }
+
+      const from = (currentPage - 1) * ITEMS_PER_PAGE;
+      const to = from + ITEMS_PER_PAGE - 1;
+
+      const { data, error, count } = await query
+        .order('created_at', { ascending: false })
+        .range(from, to);
 
       if (error) throw error;
       setLogs(data || []);
+      if (count !== null) setTotalMatchingCount(count);
     } catch (err) {
       console.error('Error fetching logs:', err);
     } finally {
@@ -472,31 +513,21 @@ export default function DashboardApp() {
     setPassword('');
   };
 
-  // Filter logs based on search term and certificate type
-  const filteredLogs = logs.filter(log => {
-    const matchesSearch = 
-      log.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      log.phone_number.includes(searchTerm) ||
-      log.email.toLowerCase().includes(searchTerm.toLowerCase());
-
-    const matchesType = 
-      typeFilter === 'all' || 
-      log.certificate_type === typeFilter;
-
-    return matchesSearch && matchesType;
-  });
-
-  // Reset page on search or filter change
-  useEffect(() => {
+  // Search and Filter change handlers
+  const handleSearchChange = (term: string) => {
+    setSearchTerm(term);
     setCurrentPage(1);
-  }, [searchTerm, typeFilter]);
+  };
+
+  const handleTypeFilterChange = (filter: 'all' | 'cycling' | 'walk-running') => {
+    setTypeFilter(filter);
+    setCurrentPage(1);
+  };
 
   // Pagination calculation
-  const totalPages = Math.max(1, Math.ceil(filteredLogs.length / ITEMS_PER_PAGE));
-  const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
-  const paginatedLogs = filteredLogs.slice(startIndex, startIndex + ITEMS_PER_PAGE);
-  const startItem = filteredLogs.length === 0 ? 0 : startIndex + 1;
-  const endItem = Math.min(startIndex + ITEMS_PER_PAGE, filteredLogs.length);
+  const totalPages = Math.max(1, Math.ceil(totalMatchingCount / ITEMS_PER_PAGE));
+  const startItem = totalMatchingCount === 0 ? 0 : (currentPage - 1) * ITEMS_PER_PAGE + 1;
+  const endItem = Math.min(currentPage * ITEMS_PER_PAGE, totalMatchingCount);
 
   const getPageNumbers = () => {
     const pages: (number | string)[] = [];
@@ -530,60 +561,71 @@ export default function DashboardApp() {
     return pages;
   };
 
-  // Calculate statistics metrics
-  const totalCount = logs.length;
-  const cyclingCount = logs.filter(log => log.certificate_type === 'cycling').length;
-  const walkRunCount = logs.filter(log => log.certificate_type === 'walk-running').length;
-
   // Build CSV and trigger browser file download
-  const handleExportCSV = () => {
-    const headers = [
-      'RECORD ID', 
-      'DATE COMPILATION', 
-      'RECIPIENT NAME', 
-      'PHONE NUMBER', 
-      'EMAIL ADDRESS', 
-      'ACTIVITY DATE', 
-      'TARGET DISTANCE', 
-      'COMPLETED DISTANCE',
-      'DURATION', 
-      'TEMPLATE ID', 
-      'CERTIFICATE TYPE',
-      'EVENT NAME',
-      'CERTIFICATE URL',
-      'ACTIVITY PROOF URL'
-    ];
+  const handleExportCSV = async () => {
+    try {
+      let query = supabase.from('certificates').select('*');
+      if (typeFilter !== 'all') {
+        query = query.eq('certificate_type', typeFilter);
+      }
+      if (searchTerm.trim()) {
+        const term = `%${searchTerm.trim()}%`;
+        query = query.or(`name.ilike.${term},phone_number.ilike.${term},email.ilike.${term}`);
+      }
+      const { data, error } = await query.order('created_at', { ascending: false });
+      if (error) throw error;
+      const exportLogs = data || [];
 
-    const rows = filteredLogs.map(log => [
-      log.id,
-      new Date(log.created_at).toLocaleString(),
-      log.name,
-      log.phone_number,
-      log.email,
-      log.activity_date,
-      log.target_distance,
-      log.completed_distance || 'N/A',
-      log.duration,
-      log.selected_template_id,
-      log.certificate_type,
-      log.event_name || 'N/A',
-      log.certificate_url || 'N/A',
-      log.activity_proof_url || 'N/A'
-    ]);
+      const headers = [
+        'RECORD ID', 
+        'DATE COMPILATION', 
+        'RECIPIENT NAME', 
+        'PHONE NUMBER', 
+        'EMAIL ADDRESS', 
+        'ACTIVITY DATE', 
+        'TARGET DISTANCE', 
+        'COMPLETED DISTANCE',
+        'DURATION', 
+        'TEMPLATE ID', 
+        'CERTIFICATE TYPE',
+        'EVENT NAME',
+        'CERTIFICATE URL',
+        'ACTIVITY PROOF URL'
+      ];
 
-    const csvContent = [
-      headers.join(','),
-      ...rows.map(row => row.map(val => `"${String(val).replace(/"/g, '""')}"`).join(','))
-    ].join('\n');
+      const rows = exportLogs.map(log => [
+        log.id,
+        new Date(log.created_at).toLocaleString(),
+        log.name,
+        log.phone_number,
+        log.email,
+        log.activity_date,
+        log.target_distance,
+        log.completed_distance || 'N/A',
+        log.duration,
+        log.selected_template_id,
+        log.certificate_type,
+        log.event_name || 'N/A',
+        log.certificate_url || 'N/A',
+        log.activity_proof_url || 'N/A'
+      ]);
 
-    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.setAttribute('download', `pedals_power_certificates_${Date.now()}.csv`);
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+      const csvContent = [
+        headers.join(','),
+        ...rows.map(row => row.map(val => `"${String(val).replace(/"/g, '""')}"`).join(','))
+      ].join('\n');
+
+      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', `pedals_power_certificates_${Date.now()}.csv`);
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    } catch (err) {
+      console.error('Error exporting CSV:', err);
+    }
   };
 
   /* ================= AUTHENTICATION LOGIN SCREEN ================= */
@@ -697,7 +739,7 @@ export default function DashboardApp() {
           <div className="bg-white border-2 border-[#E2E8F0] p-4 rounded-sm flex items-center justify-between">
             <div>
               <p className="text-[10px] font-black uppercase tracking-wider text-[#64748B]">Total Certificates</p>
-              <h3 className="text-2xl font-black mt-1">{totalCount}</h3>
+              <h3 className="text-2xl font-black mt-1">{totalCertificatesCount}</h3>
             </div>
             <div className="w-10 h-10 bg-[#1A2B4C]/10 text-[#1A2B4C] flex items-center justify-center rounded-sm">
               <Database className="w-5 h-5" />
@@ -893,7 +935,7 @@ export default function DashboardApp() {
               <input
                 type="text"
                 value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
+                onChange={(e) => handleSearchChange(e.target.value)}
                 placeholder="SEARCH RECIPIENT, PHONE, OR EMAIL..."
                 className="w-full h-10 pl-9 pr-4 text-xs font-semibold bg-white border-2 border-[#E2E8F0] rounded-sm focus:outline-none focus:border-[#1A2B4C] transition-colors placeholder:text-slate-400 placeholder:font-normal uppercase"
               />
@@ -902,7 +944,7 @@ export default function DashboardApp() {
             {/* Type Filter Select */}
             <select
               value={typeFilter}
-              onChange={(e) => setTypeFilter(e.target.value as any)}
+              onChange={(e) => handleTypeFilterChange(e.target.value as any)}
               className="h-10 px-3 text-xs font-semibold bg-white border-2 border-[#E2E8F0] rounded-sm focus:outline-none focus:border-[#1A2B4C] cursor-pointer"
             >
               <option value="all">ALL CATEGORIES</option>
@@ -914,7 +956,10 @@ export default function DashboardApp() {
           <div className="flex items-center gap-2">
             <button
               type="button"
-              onClick={fetchLogs}
+              onClick={() => {
+                fetchStats();
+                fetchLogs();
+              }}
               title="Refresh logs"
               className="h-10 w-10 border-2 border-[#E2E8F0] hover:bg-[#F8FAFC] flex items-center justify-center rounded-sm transition-colors cursor-pointer"
             >
@@ -924,9 +969,9 @@ export default function DashboardApp() {
             <button
               type="button"
               onClick={handleExportCSV}
-              disabled={filteredLogs.length === 0}
+              disabled={totalMatchingCount === 0}
               className={`h-10 px-4 text-xs font-black uppercase tracking-widest rounded-sm border-2 flex items-center gap-1.5 transition-colors cursor-pointer ${
-                filteredLogs.length > 0
+                totalMatchingCount > 0
                   ? 'bg-[#1A2B4C] hover:bg-[#2D4263] border-[#1A2B4C] text-white'
                   : 'bg-[#F8FAFC] text-[#94A3B8] border-[#E2E8F0] cursor-not-allowed'
               }`}
@@ -966,7 +1011,7 @@ export default function DashboardApp() {
                       <p className="text-[10px] font-black uppercase tracking-wider">Retrieving logs from database...</p>
                     </td>
                   </tr>
-                ) : filteredLogs.length === 0 ? (
+                ) : logs.length === 0 ? (
                   <tr>
                     <td colSpan={13} className="p-10 text-center text-[#64748B]">
                       <Database className="w-8 h-8 mx-auto text-[#94A3B8] mb-2 opacity-50" />
@@ -974,7 +1019,7 @@ export default function DashboardApp() {
                     </td>
                   </tr>
                 ) : (
-                  paginatedLogs.map(log => (
+                  logs.map(log => (
                     <tr key={log.id} className="hover:bg-[#F8FAFC]/50 transition-colors">
                       <td className="p-3 pl-4 font-bold uppercase">{log.name}</td>
                       <td className="p-3 font-mono">{log.phone_number}</td>
@@ -1053,10 +1098,10 @@ export default function DashboardApp() {
           </div>
 
           {/* Pagination Controls */}
-          {!isLoading && filteredLogs.length > 0 && (
+          {!isLoading && totalMatchingCount > 0 && (
             <div className="px-4 py-3 bg-[#F8FAFC] border-t-2 border-[#E2E8F0] flex flex-col sm:flex-row items-center justify-between gap-3 text-xs font-semibold text-[#64748B]">
               <div className="font-mono text-[11px] uppercase tracking-wider text-[#64748B]">
-                Showing <span className="font-bold text-[#1A2B4C]">{startItem}</span> to <span className="font-bold text-[#1A2B4C]">{endItem}</span> of <span className="font-bold text-[#1A2B4C]">{filteredLogs.length}</span> records
+                Showing <span className="font-bold text-[#1A2B4C]">{startItem}</span> to <span className="font-bold text-[#1A2B4C]">{endItem}</span> of <span className="font-bold text-[#1A2B4C]">{totalMatchingCount}</span> records
               </div>
 
               <div className="flex items-center gap-1">
