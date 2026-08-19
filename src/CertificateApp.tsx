@@ -512,7 +512,10 @@ export default function CertificateApp() {
         const linkEl = linkElements[i] as HTMLLinkElement;
         try {
           if (linkEl.href && (linkEl.href.startsWith(window.location.origin) || !linkEl.href.startsWith('http'))) {
-            const response = await fetch(linkEl.href);
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), 1500);
+            const response = await fetch(linkEl.href, { signal: controller.signal });
+            clearTimeout(timeoutId);
             if (response.ok) {
               const cssText = await response.text();
               if (cssText && cssText.includes('oklch')) {
@@ -553,7 +556,7 @@ export default function CertificateApp() {
 
   // Helper to capture certificate canvas with exact coordinates & CORS support
   const captureCertificateCanvas = async (element: HTMLElement): Promise<HTMLCanvasElement> => {
-    // 1. Pre-rasterize SVG images to 2x high-res PNG for iOS WebKit compatibility
+    // 1. Pre-rasterize SVG images to 2x high-res PNG for iOS WebKit compatibility (with 1.5s safety timeout)
     const images = Array.from(element.querySelectorAll('img'));
     for (const img of images) {
       if (img.src && (img.src.includes('.svg') || img.src.startsWith('data:image/svg+xml'))) {
@@ -561,8 +564,9 @@ export default function CertificateApp() {
           const tempImg = new Image();
           tempImg.crossOrigin = 'anonymous';
           await new Promise((resolve) => {
-            tempImg.onload = resolve;
-            tempImg.onerror = resolve;
+            const timer = setTimeout(resolve, 1500);
+            tempImg.onload = () => { clearTimeout(timer); resolve(true); };
+            tempImg.onerror = () => { clearTimeout(timer); resolve(false); };
             tempImg.src = img.src;
           });
 
@@ -841,35 +845,27 @@ export default function CertificateApp() {
     setDownloadType('pdf');
     setDownloadProgress(10);
     setDownloadStatus('Initializing PDF preparation...');
+    await new Promise((resolve) => setTimeout(resolve, 60));
 
     let imgUrl = generatedImgUrl;
+    let canvasElement: HTMLCanvasElement | null = null;
 
-    if (!imgUrl) {
-      setDownloadProgress(25);
-      setDownloadStatus('Rasterizing high-resolution canvas & fonts...');
-      await new Promise((resolve) => setTimeout(resolve, 200));
+    const previewArea = document.getElementById('export-capture-root') || document.getElementById('certificate-print-area');
+    if (previewArea) {
+      try {
+        setDownloadProgress(35);
+        setDownloadStatus('Rendering graphics & certificate typography...');
+        await new Promise((resolve) => setTimeout(resolve, 60));
 
-      const previewArea = document.getElementById('export-capture-root') || document.getElementById('certificate-print-area');
-      if (previewArea) {
-        try {
-          setDownloadProgress(45);
-          setDownloadStatus('Rendering graphics & certificate typography...');
-          const canvas = await captureCertificateCanvas(previewArea);
-          setDownloadProgress(70);
-          setDownloadStatus('Converting canvas to image data...');
-          imgUrl = canvas.toDataURL('image/png');
-          setGeneratedImgUrl(imgUrl);
-        } catch (err) {
-          console.error('Error rendering PDF canvas on-the-fly:', err);
-        }
+        canvasElement = await captureCertificateCanvas(previewArea);
+        imgUrl = canvasElement.toDataURL('image/png');
+        setGeneratedImgUrl(imgUrl);
+      } catch (err) {
+        console.error('Error rendering PDF canvas on-the-fly:', err);
       }
-    } else {
-      setDownloadProgress(60);
-      setDownloadStatus('Using pre-compiled certificate canvas...');
-      await new Promise((resolve) => setTimeout(resolve, 200));
     }
 
-    if (!imgUrl) {
+    if (!canvasElement && !imgUrl) {
       setIsDownloading(false);
       setDownloadProgress(0);
       setToastMessage('Could not render PDF. Please retry.');
@@ -879,9 +875,18 @@ export default function CertificateApp() {
     }
 
     try {
-      setDownloadProgress(80);
+      setDownloadProgress(75);
+      setDownloadStatus('Compressing certificate for PDF export...');
+      await new Promise((resolve) => setTimeout(resolve, 60));
+
+      // Use JPEG format with fast compression for jsPDF embedding (JPEG uses native PDF /DCTDecode, avoiding heavy JS PNG chunk parsing hang)
+      const pdfDataUrl = canvasElement 
+        ? canvasElement.toDataURL('image/jpeg', 0.95)
+        : imgUrl!;
+
+      setDownloadProgress(90);
       setDownloadStatus('Compiling A4 Landscape PDF document...');
-      await new Promise((resolve) => setTimeout(resolve, 200));
+      await new Promise((resolve) => setTimeout(resolve, 60));
 
       const pdf = new jsPDF({
         orientation: 'landscape',
@@ -890,17 +895,17 @@ export default function CertificateApp() {
         compress: true,
       });
 
-      pdf.addImage(imgUrl, 'PNG', 0, 0, 297, 210);
+      pdf.addImage(pdfDataUrl, 'JPEG', 0, 0, 297, 210, undefined, 'FAST');
 
-      setDownloadProgress(95);
+      setDownloadProgress(98);
       setDownloadStatus('Triggering file save...');
-      await new Promise((resolve) => setTimeout(resolve, 200));
+      await new Promise((resolve) => setTimeout(resolve, 60));
 
       pdf.save(`Certificate_${data.name.replace(/\s+/g, '_') || 'Achievement'}.pdf`);
 
       setDownloadProgress(100);
       setDownloadStatus('PDF Download Complete!');
-      await new Promise((resolve) => setTimeout(resolve, 500));
+      await new Promise((resolve) => setTimeout(resolve, 400));
       setIsDownloading(false);
 
       setToastMessage('PDF Saved Successfully!');
