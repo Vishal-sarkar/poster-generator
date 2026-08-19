@@ -506,37 +506,39 @@ export default function CertificateApp() {
         }
       });
 
-      // 2. Sanitize <link rel="stylesheet"> tags
-      const linkElements = document.querySelectorAll('link[rel="stylesheet"]');
-      for (let i = 0; i < linkElements.length; i++) {
-        const linkEl = linkElements[i] as HTMLLinkElement;
-        try {
-          if (linkEl.href && (linkEl.href.startsWith(window.location.origin) || !linkEl.href.startsWith('http'))) {
-            const controller = new AbortController();
-            const timeoutId = setTimeout(() => controller.abort(), 1500);
-            const response = await fetch(linkEl.href, { signal: controller.signal });
-            clearTimeout(timeoutId);
-            if (response.ok) {
-              const cssText = await response.text();
-              if (cssText && cssText.includes('oklch')) {
-                const sanitized = cssText.replace(/oklch\([^)]+\)/gi, 'rgb(100, 116, 139)');
-                const tempStyle = document.createElement('style');
-                tempStyle.innerHTML = sanitized;
-                document.head.appendChild(tempStyle);
+      // 2. Sanitize <link rel="stylesheet"> tags in parallel with fast 600ms timeout
+      const linkElements = Array.from(document.querySelectorAll('link[rel="stylesheet"]'));
+      await Promise.all(
+        linkElements.map(async (linkEl) => {
+          const el = linkEl as HTMLLinkElement;
+          try {
+            if (el.href && (el.href.startsWith(window.location.origin) || !el.href.startsWith('http'))) {
+              const controller = new AbortController();
+              const timeoutId = setTimeout(() => controller.abort(), 600);
+              const response = await fetch(el.href, { signal: controller.signal });
+              clearTimeout(timeoutId);
+              if (response.ok) {
+                const cssText = await response.text();
+                if (cssText && cssText.includes('oklch')) {
+                  const sanitized = cssText.replace(/oklch\([^)]+\)/gi, 'rgb(100, 116, 139)');
+                  const tempStyle = document.createElement('style');
+                  tempStyle.innerHTML = sanitized;
+                  document.head.appendChild(tempStyle);
 
-                linkEl.disabled = true;
+                  el.disabled = true;
 
-                linkBackups.push({
-                  element: linkEl,
-                  tempStyle,
-                });
+                  linkBackups.push({
+                    element: el,
+                    tempStyle,
+                  });
+                }
               }
             }
+          } catch (err) {
+            // Ignore non-critical fetch errors
           }
-        } catch (err) {
-          console.warn('Could not sanitize link stylesheet:', linkEl.href, err);
-        }
-      }
+        })
+      );
     } catch (err) {
       console.error('Error during stylesheet sanitization:', err);
     }
@@ -817,20 +819,26 @@ export default function CertificateApp() {
       setGeneratedImgUrl(imgUrl);
 
       setToastMessage('Certificate Compiled Successfully!');
-      
-      let uploadedUrl: string | null = null;
-      try {
-        uploadedUrl = await uploadCertificateToR2(canvas);
-      } catch (uploadErr) {
-        console.error('R2 upload failed during generate:', uploadErr);
-      }
 
-      await saveDataToBackend(uploadedUrl);
+      // Transition to Result View immediately without blocking UI on network requests
+      setView('result');
+      setShowSuccessToast(true);
+      setTimeout(() => setShowSuccessToast(false), 3000);
+      setIsGenerating(false);
+
+      // Perform Cloudflare R2 upload and Supabase database logging asynchronously in background
+      (async () => {
+        try {
+          const uploadedUrl = await uploadCertificateToR2(canvas);
+          await saveDataToBackend(uploadedUrl);
+        } catch (uploadErr) {
+          console.error('Background upload/save failed:', uploadErr);
+        }
+      })();
     } catch (err) {
       console.error('Error rendering HTML to Canvas:', err);
       setGeneratedImgUrl('');
       setToastMessage('Compiled with live fallback preview.');
-    } finally {
       setView('result');
       setShowSuccessToast(true);
       setTimeout(() => setShowSuccessToast(false), 3000);
