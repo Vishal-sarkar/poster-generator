@@ -18,6 +18,8 @@ import certIndependenceDayCyclingBg from '../../assets/cert_independence_day_cyc
 import certSportsDayBg from '../../assets/cert_sports_day_bg.svg';
 // @ts-ignore
 import certPeaceDayBg from '../../assets/cert_peace_day_bg.png';
+// @ts-ignore
+import certHeartDayBg from '../../assets/cert_heart_day_bg.png';
 
 const formatDate = (dateStr: string) => {
   if (!dateStr) return '';
@@ -101,6 +103,14 @@ export const CertificatePreview: React.FC<CertificatePreviewProps> = ({ data, is
 
   // Font size logic for recipient's name (different for Youth Day / Independence Day / Sports Day vs others)
   const getNameStyle = (nameText: string): React.CSSProperties => {
+    if (data.selectedTemplateId === 'heart-day') {
+      const len = nameText.length || 1;
+      const calculatedSize = len <= 24 ? 64 : Math.max(38, Math.min(55, 1700 / len));
+      return {
+        fontSize: `${calculatedSize}px`,
+        color: '#364663',
+      };
+    }
     if (data.selectedTemplateId === 'peace-day') {
       const len = nameText.length || 1;
       const calculatedSize = len <= 24 ? 64 : Math.max(38, Math.min(55, 1700 / len));
@@ -613,6 +623,91 @@ export const CertificatePreview: React.FC<CertificatePreviewProps> = ({ data, is
       </div>
     );
   }
+
+  if (data.selectedTemplateId === 'heart-day') {
+    return (
+      <div 
+        ref={containerRef} 
+        className="w-full flex items-start justify-start select-none" 
+        style={isGenerating ? { width: '1414px', minWidth: '1414px' } : undefined}
+        id="cert-preview-wrapper"
+      >
+        <div style={wrapperStyle} className="transition-all duration-200">
+          <div style={innerStyle} className="bg-white relative shadow-none" id="certificate-print-area">
+            {/* Background Image */}
+            <div className="absolute inset-0 w-full h-full" style={{ zIndex: 0 }}>
+              <img 
+                src={certHeartDayBg} 
+                alt="Certificate Background" 
+                className="w-full h-full object-cover" 
+                style={{ width: '1414px', height: '970px', maxWidth: 'none', maxHeight: 'none' }}
+                width="1414" 
+                height="970" 
+              />
+            </div>
+
+            {/* Recipient Name */}
+            <div 
+              className="absolute left-1/2 -translate-x-1/2 text-center flex items-center justify-center" 
+              style={{ 
+                top: isGenerating ? '385px' : '399px', 
+                width: '1200px', 
+                height: '90px',
+                zIndex: 10 
+              }}
+            >
+              <h2 
+                className="font-medium tracking-normal text-center"
+                style={{
+                  ...getNameStyle(data.name || 'YOUR NAME HERE'),
+                  fontFamily: '"Poppins", "Inter", sans-serif',
+                  fontWeight: 500,
+                  color: '#364663',
+                  letterSpacing: '0.02em',
+                  margin: 0,
+                  padding: 0,
+                  lineHeight: '1.05'
+                }}
+              >
+                {(data.name || '').trim() || 'YOUR NAME HERE'}
+              </h2>
+            </div>
+
+            {/* Duration Stat (placed above the line) */}
+            <div 
+              className="absolute text-center" 
+              style={{ 
+                left: '325px', 
+                top: isGenerating ? '628px' : '645px', 
+                width: '260px', 
+                zIndex: 10 
+              }}
+            >
+              <span className="text-[28px] font-bold tracking-normal text-[#1A2B4C]" style={{ fontFamily: '"Poppins", sans-serif', fontWeight: 600 }}>
+                {data.duration || '00:00:00'}
+              </span>
+            </div>
+
+            {/* Distance Stat (placed above the line) */}
+            <div 
+              className="absolute text-center" 
+              style={{ 
+                left: '828px', 
+                top: isGenerating ? '629px' : '647px', 
+                width: '260px', 
+                zIndex: 10 
+              }}
+            >
+              <span className="text-[28px] font-bold tracking-normal text-[#1A2B4C]" style={{ fontFamily: '"Poppins", sans-serif', fontWeight: 600 }}>
+                {displayCompletedDistance()}
+              </span>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
 
   return (
     <div ref={containerRef} className="w-full flex items-start justify-start select-none" id="cert-preview-wrapper">
