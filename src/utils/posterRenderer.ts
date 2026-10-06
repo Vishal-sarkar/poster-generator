@@ -19,6 +19,7 @@ export interface TemplateConfig {
 import { youthDayTemplate } from './youthDayTemplate';
 import { independenceDayTemplate } from './independenceDayTemplate';
 import { sportsDayTemplate } from './sportsDayTemplate';
+import { indianAirForceDayTemplate } from './indianAirForceDayTemplate';
 
 export const TEMPLATES: TemplateConfig[] = [
   {
@@ -48,6 +49,7 @@ export const TEMPLATES: TemplateConfig[] = [
   youthDayTemplate,
   independenceDayTemplate,
   sportsDayTemplate,
+  indianAirForceDayTemplate,
 ];
 
 export interface FormState {
@@ -414,7 +416,8 @@ export function renderPoster(
   loadedYouthDayBg: HTMLImageElement | null = null,
   loadedIndependenceDayBg: HTMLImageElement | null = null,
   loadedIndependenceDayCyclingBg: HTMLImageElement | null = null,
-  loadedSportsDayBg: HTMLImageElement | null = null
+  loadedSportsDayBg: HTMLImageElement | null = null,
+  loadedIndianAirForceDayBg: HTMLImageElement | null = null
 ) {
   const ctx = canvas.getContext('2d');
   if (!ctx) return;
@@ -460,7 +463,14 @@ export function renderPoster(
   // --------------------------------------------------
   // 1. DRAW BACKGROUND LAYER FIRST
   // --------------------------------------------------
-  if (config.id === 'sports-day') {
+  if (config.id === 'indian-air-force-day') {
+    if (loadedIndianAirForceDayBg) {
+      ctx.drawImage(loadedIndianAirForceDayBg, 0, 0, 1080, 1080);
+    } else {
+      ctx.fillStyle = '#87ceeb';
+      ctx.fillRect(0, 0, 1080, 1080);
+    }
+  } else if (config.id === 'sports-day') {
     if (loadedSportsDayBg) {
       ctx.drawImage(loadedSportsDayBg, 0, 0, 1080, 1080);
     } else {
@@ -598,7 +608,7 @@ export function renderPoster(
   // --------------------------------------------------
   // 2. DRAW PHOTO (WITH CLIPPING MASK AND ROTATION IF APPLICABLE)
   // --------------------------------------------------
-  const isYouthDay = config.id === 'youth-day' || config.id === 'independence-day' || config.id === 'sports-day';
+  const isYouthDay = config.id === 'youth-day' || config.id === 'independence-day' || config.id === 'sports-day' || config.id === 'indian-air-force-day';
   const cardCenterX = config.frameX + config.frameWidth / 2;
   const cardCenterY = isYouthDay
     ? config.frameY + (config.frameHeight + 120) / 2
@@ -702,7 +712,7 @@ export function renderPoster(
     ctx.fillText('009', config.frameX + 35, config.frameY + 45);
     ctx.fillText('◀ 600', config.frameX + 13, config.frameY + 280);
 
-  } else if (config.id === 'youth-day' || config.id === 'independence-day' || config.id === 'sports-day') {
+  } else if (config.id === 'youth-day' || config.id === 'independence-day' || config.id === 'sports-day' || config.id === 'indian-air-force-day') {
     // Draw the rounded photo frame path and clip
     ctx.save();
     drawRoundedRect(ctx, config.frameX, config.frameY, config.frameWidth, config.frameHeight, config.frameRadius);
@@ -760,8 +770,8 @@ export function renderPoster(
     const nameBannerHeight = isTwoLines ? 100 : 60;
 
     // 1. Draw name banner background
-    if (config.id === 'sports-day') {
-      ctx.fillStyle = '#059190'; // Teal
+    if (config.id === 'sports-day' || config.id === 'indian-air-force-day') {
+      ctx.fillStyle = '#029390'; // Teal
       ctx.fillRect(config.frameX, config.frameY + config.frameHeight, config.frameWidth, nameBannerHeight);
     } else if (config.id === 'independence-day') {
       ctx.fillStyle = '#e65c00'; // saffron orange
@@ -815,9 +825,13 @@ export function renderPoster(
     }
 
     // 2. Draw target banner
-    const targetBannerHeight = config.id === 'sports-day' ? 55 : 60;
+    const targetBannerHeight = (config.id === 'sports-day' || config.id === 'indian-air-force-day') ? 50 : 60;
     if (config.id === 'sports-day') {
       ctx.fillStyle = '#DD9C02'; // Gold / Amber
+      ctx.fillRect(config.frameX, config.frameY + config.frameHeight + nameBannerHeight, config.frameWidth, targetBannerHeight);
+      ctx.fillStyle = '#000000';
+    } else if (config.id === 'indian-air-force-day') {
+      ctx.fillStyle = '#bb7807'; // Dark Gold / Saffron Amber
       ctx.fillRect(config.frameX, config.frameY + config.frameHeight + nameBannerHeight, config.frameWidth, targetBannerHeight);
       ctx.fillStyle = '#000000';
     } else if (config.id === 'independence-day') {
@@ -842,8 +856,8 @@ export function renderPoster(
     ctx.lineWidth = 6;
     ctx.lineJoin = 'miter';
     
-    if (config.id === 'sports-day') {
-      ctx.strokeStyle = '#000000';
+    if (config.id === 'sports-day' || config.id === 'indian-air-force-day') {
+      ctx.strokeStyle = '#063b7b';
       ctx.strokeRect(config.frameX, config.frameY, config.frameWidth, config.frameHeight);
       ctx.strokeRect(config.frameX, config.frameY + config.frameHeight, config.frameWidth, nameBannerHeight);
       ctx.strokeRect(config.frameX, config.frameY + config.frameHeight + nameBannerHeight, config.frameWidth, targetBannerHeight);
@@ -938,7 +952,7 @@ export function renderPoster(
   // --------------------------------------------------
   // 3. DRAW TEMPLATE FOREGROUND LAYERS & TEXT ON TOP
   // --------------------------------------------------
-  if (config.id === 'youth-day' || config.id === 'independence-day' || config.id === 'sports-day') {
+  if (config.id === 'youth-day' || config.id === 'independence-day' || config.id === 'sports-day' || config.id === 'indian-air-force-day') {
     // Handled in the rotated Step 2 drawing block
   } else if (config.id === 'cycling-challenge') {
     // --------------------------------------------------
