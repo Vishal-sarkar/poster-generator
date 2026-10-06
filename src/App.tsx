@@ -48,6 +48,8 @@ import independenceDayBg from '../assets/independence_day_bg.jpg';
 import independenceDayCyclingBg from '../assets/independence_day_cycling_bg.jpg';
 // @ts-ignore
 import sportsDayBg from '../assets/sports_day_bg.jpg';
+// @ts-ignore
+import indianAirForceDayBg from '../assets/indian_air_force_day_bg.jpg';
 
 
 interface DropdownProps {
@@ -335,6 +337,7 @@ function PosterGenerator() {
   const [loadedIndependenceDayBg, setLoadedIndependenceDayBg] = useState<HTMLImageElement | null>(null);
   const [loadedIndependenceDayCyclingBg, setLoadedIndependenceDayCyclingBg] = useState<HTMLImageElement | null>(null);
   const [loadedSportsDayBg, setLoadedSportsDayBg] = useState<HTMLImageElement | null>(null);
+  const [loadedIndianAirForceDayBg, setLoadedIndianAirForceDayBg] = useState<HTMLImageElement | null>(null);
 
   useEffect(() => {
     const img = new Image();
@@ -378,6 +381,12 @@ function PosterGenerator() {
     img7.onload = () => {
       setLoadedSportsDayBg(img7);
     };
+
+    const img8 = new Image();
+    img8.src = indianAirForceDayBg;
+    img8.onload = () => {
+      setLoadedIndianAirForceDayBg(img8);
+    };
   }, []);
 
   // Primary unified form state
@@ -389,13 +398,14 @@ function PosterGenerator() {
     const isYouthDay = eventParam === 'youth-day';
     const isIndependenceDay = eventParam === 'independence-day';
     const isSportsDay = eventParam === 'sports-day' || eventParam === 'sports_day';
+    const isAirForceDay = eventParam === 'indian-air-force-day' || eventParam === 'indian_air_force_day';
     
     return {
       name: '',
-      date: '2026-08-29',
+      date: '2026-10-08',
       target: 'Select Target',
       photoUrl: null,
-      templateId: isSportsDay ? 'sports-day' : isIndependenceDay ? 'independence-day' : isYouthDay ? 'youth-day' : 'cycling-challenge',
+      templateId: isAirForceDay ? 'indian-air-force-day' : isSportsDay ? 'sports-day' : isIndependenceDay ? 'independence-day' : isYouthDay ? 'youth-day' : 'cycling-challenge',
       photoX: 0,
       photoY: 0,
       photoScale: 1.0,
@@ -502,12 +512,12 @@ function PosterGenerator() {
   // Redraw both canvases instantly when state, loadedPhoto, dragging state, or step/view state changes
   useEffect(() => {
     if (desktopCanvasRef.current) {
-      renderPoster(desktopCanvasRef.current, state, loadedPhoto, loadedCyclingBg, loadedRunWalkBg, isDragging, loadedHalftone, loadedYouthDayBg, loadedIndependenceDayBg, loadedIndependenceDayCyclingBg, loadedSportsDayBg);
+      renderPoster(desktopCanvasRef.current, state, loadedPhoto, loadedCyclingBg, loadedRunWalkBg, isDragging, loadedHalftone, loadedYouthDayBg, loadedIndependenceDayBg, loadedIndependenceDayCyclingBg, loadedSportsDayBg, loadedIndianAirForceDayBg);
     }
     if (mobileCanvasRef.current) {
-      renderPoster(mobileCanvasRef.current, state, loadedPhoto, loadedCyclingBg, loadedRunWalkBg, isDragging, loadedHalftone, loadedYouthDayBg, loadedIndependenceDayBg, loadedIndependenceDayCyclingBg, loadedSportsDayBg);
+      renderPoster(mobileCanvasRef.current, state, loadedPhoto, loadedCyclingBg, loadedRunWalkBg, isDragging, loadedHalftone, loadedYouthDayBg, loadedIndependenceDayBg, loadedIndependenceDayCyclingBg, loadedSportsDayBg, loadedIndianAirForceDayBg);
     }
-  }, [state, loadedPhoto, loadedCyclingBg, loadedRunWalkBg, isDragging, mobileStep, isGenerated, loadedHalftone, loadedYouthDayBg, loadedIndependenceDayBg, loadedIndependenceDayCyclingBg, loadedSportsDayBg]);
+  }, [state, loadedPhoto, loadedCyclingBg, loadedRunWalkBg, isDragging, mobileStep, isGenerated, loadedHalftone, loadedYouthDayBg, loadedIndependenceDayBg, loadedIndependenceDayCyclingBg, loadedSportsDayBg, loadedIndianAirForceDayBg]);
 
   // Hook scroll wheel zooming directly onto canvases to prevent page-level scrolling
   useEffect(() => {
