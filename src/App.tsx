@@ -1128,7 +1128,7 @@ function PosterGenerator() {
           </section>
 
           {/* Card 3: Design Template Variants */}
-          {state.templateId !== 'youth-day' && state.templateId !== 'independence-day' && state.templateId !== 'sports-day' && (
+          {state.templateId !== 'youth-day' && state.templateId !== 'independence-day' && state.templateId !== 'sports-day' && state.templateId !== 'indian-air-force-day' && (
             <section className="uber-card p-6 flex flex-col space-y-4">
               <div className="flex items-center space-x-2 border-b border-slate-200 pb-3">
                 <Sliders className="w-5 h-5 text-neutral-900" />
@@ -1136,7 +1136,7 @@ function PosterGenerator() {
               </div>
 
               <div className="grid grid-cols-1 gap-3">
-                {TEMPLATES.filter(tpl => tpl.id !== 'youth-day' && tpl.id !== 'sports-day').map((tpl) => {
+                {TEMPLATES.filter(tpl => tpl.id !== 'youth-day' && tpl.id !== 'sports-day' && tpl.id !== 'independence-day' && tpl.id !== 'indian-air-force-day').map((tpl) => {
                   const isActive = state.templateId === tpl.id;
                   return (
                     <button
@@ -1453,11 +1453,11 @@ function PosterGenerator() {
               </div>
 
               {/* Template selector carousel */}
-              {state.templateId !== 'youth-day' && state.templateId !== 'independence-day' && state.templateId !== 'sports-day' && (
+              {state.templateId !== 'youth-day' && state.templateId !== 'independence-day' && state.templateId !== 'sports-day' && state.templateId !== 'indian-air-force-day' && (
                 <div className="flex flex-col space-y-1.5">
                   <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Select Poster Template Style</span>
                   <div className="flex space-x-3 overflow-x-auto pb-1 px-1 scroll-smooth snap-x">
-                    {TEMPLATES.filter(tpl => tpl.id !== 'youth-day' && tpl.id !== 'sports-day').map((tpl) => {
+                    {TEMPLATES.filter(tpl => tpl.id !== 'youth-day' && tpl.id !== 'sports-day' && tpl.id !== 'independence-day' && tpl.id !== 'indian-air-force-day').map((tpl) => {
                       const isSelected = state.templateId === tpl.id;
                       return (
                         <button
