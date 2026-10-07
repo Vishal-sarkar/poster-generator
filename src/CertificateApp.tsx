@@ -173,12 +173,20 @@ export default function CertificateApp() {
 
     const searchParams = typeof window !== 'undefined' ? new URLSearchParams(window.location.search) : null;
     const eventName = searchParams ? searchParams.get('event') || '' : '';
+    const path = typeof window !== 'undefined' ? window.location.pathname : '';
+    const isWalkRunning = path.includes('/walk-runing');
+
     if (eventName) {
       const template = getTemplateForEvent(eventName);
       if (template) {
+        const isIAF = template.id === 'indian-air-force-day';
         return {
           ...initialData,
-          selectedTemplateId: template.id
+          selectedTemplateId: template.id,
+          rideName: isIAF 
+            ? (isWalkRunning ? 'Indian Air Force Day Run/Walk Virtual Challenge' : 'Indian Air Force Day Cycling Virtual Challenge')
+            : initialData.rideName,
+          rideDate: isIAF ? '2026-10-08' : initialData.rideDate,
         };
       }
     }
@@ -284,10 +292,21 @@ export default function CertificateApp() {
 
       setData(prev => {
         let nextTemplateId = prev.selectedTemplateId;
+        let nextRideName = prev.rideName;
+        let nextRideDate = prev.rideDate;
+
         if (eventName) {
           const template = getTemplateForEvent(eventName);
           if (template) {
             nextTemplateId = template.id;
+            if (template.id === 'indian-air-force-day' && (!prev.rideName || prev.rideName.includes('Indian Air Force Day'))) {
+              nextRideName = path.includes('/walk-runing') 
+                ? 'Indian Air Force Day Run/Walk Virtual Challenge'
+                : 'Indian Air Force Day Cycling Virtual Challenge';
+              if (!prev.rideDate) {
+                nextRideDate = '2026-10-08';
+              }
+            }
           }
         }
 
@@ -310,12 +329,14 @@ export default function CertificateApp() {
           }
         }
 
-        if (prev.selectedTemplateId !== nextTemplateId || prev.distance !== nextDistance || prev.distanceUnit !== nextDistanceUnit) {
+        if (prev.selectedTemplateId !== nextTemplateId || prev.distance !== nextDistance || prev.distanceUnit !== nextDistanceUnit || prev.rideName !== nextRideName || prev.rideDate !== nextRideDate) {
           return {
             ...prev,
             selectedTemplateId: nextTemplateId,
             distance: nextDistance,
-            distanceUnit: nextDistanceUnit
+            distanceUnit: nextDistanceUnit,
+            rideName: nextRideName,
+            rideDate: nextRideDate,
           };
         }
         return prev;
