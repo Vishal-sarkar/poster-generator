@@ -21,7 +21,7 @@ import certPeaceDayBg from '../../assets/cert_peace_day_bg.png';
 // @ts-ignore
 import certHeartDayBg from '../../assets/cert_heart_day_bg.png';
 // @ts-ignore
-import certIndianAirForceDayBg from '../../assets/cert_indian_air_force_day_bg.png';
+import certIndianAirForceDayBg from '../../assets/cert_indian_air_force_day_bg.svg';
 
 const formatDate = (dateStr: string) => {
   if (!dateStr) return '';
@@ -773,7 +773,7 @@ export const CertificatePreview: React.FC<CertificatePreviewProps> = ({ data, is
               className="absolute text-center" 
               style={{ 
                 left: '290px', 
-                top: isGenerating ? '618px' : '633px', 
+                top: isGenerating ? '615px' : '633px', 
                 width: '260px', 
                 zIndex: 10 
               }}
