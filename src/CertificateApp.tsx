@@ -180,13 +180,16 @@ export default function CertificateApp() {
       const template = getTemplateForEvent(eventName);
       if (template) {
         const isIAF = template.id === 'indian-air-force-day';
+        const isUNDay = template.id === 'un-day';
         return {
           ...initialData,
           selectedTemplateId: template.id,
           rideName: isIAF 
             ? (isWalkRunning ? 'Indian Air Force Day Run/Walk Virtual Challenge' : 'Indian Air Force Day Cycling Virtual Challenge')
+            : isUNDay
+            ? (isWalkRunning ? 'UN Day Run/Walk Virtual Challenge' : 'UN Day Cycling Virtual Challenge')
             : initialData.rideName,
-          rideDate: isIAF ? '2026-10-08' : initialData.rideDate,
+          rideDate: isIAF ? '2026-10-08' : isUNDay ? '2026-10-24' : initialData.rideDate,
         };
       }
     }
@@ -305,6 +308,13 @@ export default function CertificateApp() {
                 : 'Indian Air Force Day Cycling Virtual Challenge';
               if (!prev.rideDate) {
                 nextRideDate = '2026-10-08';
+              }
+            } else if (template.id === 'un-day' && (!prev.rideName || prev.rideName.includes('UN Day'))) {
+              nextRideName = path.includes('/walk-runing') 
+                ? 'UN Day Run/Walk Virtual Challenge'
+                : 'UN Day Cycling Virtual Challenge';
+              if (!prev.rideDate) {
+                nextRideDate = '2026-10-24';
               }
             }
           }
