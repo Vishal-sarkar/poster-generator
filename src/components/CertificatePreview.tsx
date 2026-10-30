@@ -24,6 +24,8 @@ import certHeartDayBg from '../../assets/cert_heart_day_bg.png';
 import certIndianAirForceDayBg from '../../assets/cert_indian_air_force_day_bg.svg';
 // @ts-ignore
 import certUnDayBg from '../../assets/cert_un_day_bg.svg';
+// @ts-ignore
+import certNationalUnityDayBg from '../../assets/cert_national_unity_day_bg.svg';
 
 const formatDate = (dateStr: string) => {
   if (!dateStr) return '';
@@ -107,6 +109,14 @@ export const CertificatePreview: React.FC<CertificatePreviewProps> = ({ data, is
 
   // Font size logic for recipient's name (different for Youth Day / Independence Day / Sports Day vs others)
   const getNameStyle = (nameText: string): React.CSSProperties => {
+    if (data.selectedTemplateId === 'national-unity-day') {
+      const len = nameText.length || 1;
+      const calculatedSize = len <= 24 ? 64 : Math.max(38, Math.min(55, 1700 / len));
+      return {
+        fontSize: `${calculatedSize}px`,
+        color: '#000000',
+      };
+    }
     if (data.selectedTemplateId === 'un-day' || data.selectedTemplateId === 'indian-air-force-day') {
       const len = nameText.length || 1;
       const calculatedSize = len <= 24 ? 64 : Math.max(38, Math.min(55, 1700 / len));
@@ -880,6 +890,90 @@ export const CertificatePreview: React.FC<CertificatePreviewProps> = ({ data, is
               }}
             >
               <span className="text-[28px] font-medium tracking-normal text-[#060f36]" style={{ fontFamily: '"Poppins", sans-serif', fontWeight: 600 }}>
+                {displayCompletedDistance()}
+              </span>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (data.selectedTemplateId === 'national-unity-day') {
+    return (
+      <div 
+        ref={containerRef} 
+        className="w-full flex items-start justify-start select-none" 
+        style={isGenerating ? { width: '1414px', minWidth: '1414px' } : undefined}
+        id="cert-preview-wrapper"
+      >
+        <div style={wrapperStyle} className="transition-all duration-200">
+          <div style={innerStyle} className="bg-white relative shadow-none" id="certificate-print-area">
+            {/* Background Image */}
+            <div className="absolute inset-0 w-full h-full" style={{ zIndex: 0 }}>
+              <img 
+                src={certNationalUnityDayBg} 
+                alt="Certificate Background" 
+                className="w-full h-full object-cover" 
+                style={{ width: '1414px', height: '970px', maxWidth: 'none', maxHeight: 'none' }}
+                width="1414" 
+                height="970" 
+              />
+            </div>
+
+            {/* Recipient Name */}
+            <div 
+              className="absolute left-1/2 -translate-x-1/2 text-center flex items-center justify-center" 
+              style={{ 
+                top: isGenerating ? '370px' : '390px', 
+                width: '1200px', 
+                height: '85px',
+                zIndex: 10 
+              }}
+            >
+              <h2 
+                className="font-normal tracking-normal text-center"
+                style={{
+                  ...getNameStyle(data.name || 'YOUR NAME HERE'),
+                  fontFamily: '"Inter", "Poppins", sans-serif',
+                  fontWeight: 500,
+                  color: '#000000',
+                  letterSpacing: '0.01em',
+                  margin: 0,
+                  padding: 0,
+                  lineHeight: '1.05',
+                }}
+              >
+                {(data.name || '').trim() || 'YOUR NAME HERE'}
+              </h2>
+            </div>
+
+            {/* Duration Stat (placed above the line) */}
+            <div 
+              className="absolute text-center" 
+              style={{ 
+                left: '292px', 
+                top: isGenerating ? '595px' : '615px', 
+                width: '260px', 
+                zIndex: 10 
+              }}
+            >
+              <span className="text-[28px] font-medium tracking-normal text-[#000000]" style={{ fontFamily: '"Poppins", sans-serif', fontWeight: 600 }}>
+                {data.duration || '00:00:00'}
+              </span>
+            </div>
+
+            {/* Distance Stat (placed above the line) */}
+            <div 
+              className="absolute text-center" 
+              style={{ 
+                left: '850px', 
+                top: isGenerating ? '600px' : '618px', 
+                width: '260px', 
+                zIndex: 10 
+              }}
+            >
+              <span className="text-[28px] font-medium tracking-normal text-[#000000]" style={{ fontFamily: '"Poppins", sans-serif', fontWeight: 600 }}>
                 {displayCompletedDistance()}
               </span>
             </div>
