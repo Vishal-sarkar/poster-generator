@@ -182,6 +182,7 @@ export default function CertificateApp() {
         const isIAF = template.id === 'indian-air-force-day';
         const isUNDay = template.id === 'un-day';
         const isUnityDay = template.id === 'national-unity-day';
+        const isDiabetesDay = template.id === 'world-diabetes-day';
         return {
           ...initialData,
           selectedTemplateId: template.id,
@@ -191,8 +192,10 @@ export default function CertificateApp() {
             ? (isWalkRunning ? 'UN Day Run/Walk Virtual Challenge' : 'UN Day Cycling Virtual Challenge')
             : isUnityDay
             ? (isWalkRunning ? 'National Unity Day Run/Walk Virtual Challenge' : 'National Unity Day Cycling Virtual Challenge')
+            : isDiabetesDay
+            ? (isWalkRunning ? 'World Diabetes Day Run/Walk Virtual Challenge' : 'World Diabetes Day Cycling Virtual Challenge')
             : initialData.rideName,
-          rideDate: isIAF ? '2026-10-08' : isUNDay ? '2026-10-24' : isUnityDay ? '2026-10-31' : initialData.rideDate,
+          rideDate: isIAF ? '2026-10-08' : isUNDay ? '2026-10-24' : isUnityDay ? '2026-10-31' : isDiabetesDay ? '2026-11-14' : initialData.rideDate,
         };
       }
     }
@@ -325,6 +328,13 @@ export default function CertificateApp() {
                 : 'National Unity Day Cycling Virtual Challenge';
               if (!prev.rideDate) {
                 nextRideDate = '2026-10-31';
+              }
+            } else if (template.id === 'world-diabetes-day' && (!prev.rideName || prev.rideName.includes('World Diabetes Day'))) {
+              nextRideName = path.includes('/walk-runing') 
+                ? 'World Diabetes Day Run/Walk Virtual Challenge'
+                : 'World Diabetes Day Cycling Virtual Challenge';
+              if (!prev.rideDate) {
+                nextRideDate = '2026-11-14';
               }
             }
           }

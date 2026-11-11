@@ -52,6 +52,8 @@ import sportsDayBg from '../assets/sports_day_bg.jpg';
 import indianAirForceDayBg from '../assets/indian_air_force_day_bg.jpg';
 // @ts-ignore
 import unDayBg from '../assets/un_day_bg.jpg';
+// @ts-ignore
+import worldDiabetesDayBg from '../assets/world_diabetes_day_bg.jpg';
 
 
 interface DropdownProps {
@@ -341,6 +343,7 @@ function PosterGenerator() {
   const [loadedSportsDayBg, setLoadedSportsDayBg] = useState<HTMLImageElement | null>(null);
   const [loadedIndianAirForceDayBg, setLoadedIndianAirForceDayBg] = useState<HTMLImageElement | null>(null);
   const [loadedUnDayBg, setLoadedUnDayBg] = useState<HTMLImageElement | null>(null);
+  const [loadedWorldDiabetesDayBg, setLoadedWorldDiabetesDayBg] = useState<HTMLImageElement | null>(null);
 
   useEffect(() => {
     const img = new Image();
@@ -396,6 +399,12 @@ function PosterGenerator() {
     img9.onload = () => {
       setLoadedUnDayBg(img9);
     };
+
+    const img10 = new Image();
+    img10.src = worldDiabetesDayBg;
+    img10.onload = () => {
+      setLoadedWorldDiabetesDayBg(img10);
+    };
   }, []);
 
   // Primary unified form state
@@ -409,13 +418,14 @@ function PosterGenerator() {
     const isSportsDay = eventParam === 'sports-day' || eventParam === 'sports_day';
     const isAirForceDay = eventParam === 'indian-air-force-day' || eventParam === 'indian_air_force_day';
     const isUnDay = eventParam === 'un-day' || eventParam === 'un_day';
+    const isDiabetesDay = eventParam === 'world-diabetes-day' || eventParam === 'world_diabetes_day';
     
     return {
       name: '',
-      date: isUnDay ? '2026-10-24' : isAirForceDay ? '2026-10-08' : '2026-08-29',
+      date: isDiabetesDay ? '2026-11-14' : isUnDay ? '2026-10-24' : isAirForceDay ? '2026-10-08' : '2026-08-29',
       target: 'Select Target',
       photoUrl: null,
-      templateId: isUnDay ? 'un-day' : isAirForceDay ? 'indian-air-force-day' : isSportsDay ? 'sports-day' : isIndependenceDay ? 'independence-day' : isYouthDay ? 'youth-day' : 'cycling-challenge',
+      templateId: isDiabetesDay ? 'world-diabetes-day' : isUnDay ? 'un-day' : isAirForceDay ? 'indian-air-force-day' : isSportsDay ? 'sports-day' : isIndependenceDay ? 'independence-day' : isYouthDay ? 'youth-day' : 'cycling-challenge',
       photoX: 0,
       photoY: 0,
       photoScale: 1.0,
@@ -496,10 +506,13 @@ function PosterGenerator() {
       const isSportsDay = eventParam === 'sports-day' || eventParam === 'sports_day';
       const isAirForceDay = eventParam === 'indian-air-force-day' || eventParam === 'indian_air_force_day';
       const isUnDay = eventParam === 'un-day' || eventParam === 'un_day';
+      const isDiabetesDay = eventParam === 'world-diabetes-day' || eventParam === 'world_diabetes_day';
       
       setState(prev => {
         const nextRoute = isWalkRunning ? 'walk-runing' as const : 'cycling' as const;
-        const nextTemplateId = isUnDay
+        const nextTemplateId = isDiabetesDay
+          ? 'world-diabetes-day'
+          : isUnDay
           ? 'un-day'
           : isAirForceDay
           ? 'indian-air-force-day'
@@ -509,7 +522,7 @@ function PosterGenerator() {
           ? 'independence-day' 
           : isYouthDay 
           ? 'youth-day' 
-          : (prev.templateId === 'youth-day' || prev.templateId === 'independence-day' || prev.templateId === 'sports-day' || prev.templateId === 'indian-air-force-day' || prev.templateId === 'un-day' ? 'cycling-challenge' : prev.templateId);
+          : (prev.templateId === 'youth-day' || prev.templateId === 'independence-day' || prev.templateId === 'sports-day' || prev.templateId === 'indian-air-force-day' || prev.templateId === 'un-day' || prev.templateId === 'world-diabetes-day' ? 'cycling-challenge' : prev.templateId);
         
         if (prev.activityRoute !== nextRoute || prev.templateId !== nextTemplateId) {
           return {
@@ -528,12 +541,12 @@ function PosterGenerator() {
   // Redraw both canvases instantly when state, loadedPhoto, dragging state, or step/view state changes
   useEffect(() => {
     if (desktopCanvasRef.current) {
-      renderPoster(desktopCanvasRef.current, state, loadedPhoto, loadedCyclingBg, loadedRunWalkBg, isDragging, loadedHalftone, loadedYouthDayBg, loadedIndependenceDayBg, loadedIndependenceDayCyclingBg, loadedSportsDayBg, loadedIndianAirForceDayBg, loadedUnDayBg);
+      renderPoster(desktopCanvasRef.current, state, loadedPhoto, loadedCyclingBg, loadedRunWalkBg, isDragging, loadedHalftone, loadedYouthDayBg, loadedIndependenceDayBg, loadedIndependenceDayCyclingBg, loadedSportsDayBg, loadedIndianAirForceDayBg, loadedUnDayBg, loadedWorldDiabetesDayBg);
     }
     if (mobileCanvasRef.current) {
-      renderPoster(mobileCanvasRef.current, state, loadedPhoto, loadedCyclingBg, loadedRunWalkBg, isDragging, loadedHalftone, loadedYouthDayBg, loadedIndependenceDayBg, loadedIndependenceDayCyclingBg, loadedSportsDayBg, loadedIndianAirForceDayBg, loadedUnDayBg);
+      renderPoster(mobileCanvasRef.current, state, loadedPhoto, loadedCyclingBg, loadedRunWalkBg, isDragging, loadedHalftone, loadedYouthDayBg, loadedIndependenceDayBg, loadedIndependenceDayCyclingBg, loadedSportsDayBg, loadedIndianAirForceDayBg, loadedUnDayBg, loadedWorldDiabetesDayBg);
     }
-  }, [state, loadedPhoto, loadedCyclingBg, loadedRunWalkBg, isDragging, mobileStep, isGenerated, loadedHalftone, loadedYouthDayBg, loadedIndependenceDayBg, loadedIndependenceDayCyclingBg, loadedSportsDayBg, loadedIndianAirForceDayBg, loadedUnDayBg]);
+  }, [state, loadedPhoto, loadedCyclingBg, loadedRunWalkBg, isDragging, mobileStep, isGenerated, loadedHalftone, loadedYouthDayBg, loadedIndependenceDayBg, loadedIndependenceDayCyclingBg, loadedSportsDayBg, loadedIndianAirForceDayBg, loadedUnDayBg, loadedWorldDiabetesDayBg]);
 
   // Hook scroll wheel zooming directly onto canvases to prevent page-level scrolling
   useEffect(() => {
@@ -1144,7 +1157,7 @@ function PosterGenerator() {
           </section>
 
           {/* Card 3: Design Template Variants */}
-          {state.templateId !== 'youth-day' && state.templateId !== 'independence-day' && state.templateId !== 'sports-day' && state.templateId !== 'indian-air-force-day' && state.templateId !== 'un-day' && (
+          {state.templateId !== 'youth-day' && state.templateId !== 'independence-day' && state.templateId !== 'sports-day' && state.templateId !== 'indian-air-force-day' && state.templateId !== 'un-day' && state.templateId !== 'world-diabetes-day' && (
             <section className="uber-card p-6 flex flex-col space-y-4">
               <div className="flex items-center space-x-2 border-b border-slate-200 pb-3">
                 <Sliders className="w-5 h-5 text-neutral-900" />
@@ -1152,7 +1165,7 @@ function PosterGenerator() {
               </div>
 
               <div className="grid grid-cols-1 gap-3">
-                {TEMPLATES.filter(tpl => tpl.id !== 'youth-day' && tpl.id !== 'sports-day' && tpl.id !== 'independence-day' && tpl.id !== 'indian-air-force-day' && tpl.id !== 'un-day').map((tpl) => {
+                {TEMPLATES.filter(tpl => tpl.id !== 'youth-day' && tpl.id !== 'sports-day' && tpl.id !== 'independence-day' && tpl.id !== 'indian-air-force-day' && tpl.id !== 'un-day' && tpl.id !== 'world-diabetes-day').map((tpl) => {
                   const isActive = state.templateId === tpl.id;
                   return (
                     <button
@@ -1469,11 +1482,11 @@ function PosterGenerator() {
               </div>
 
               {/* Template selector carousel */}
-              {state.templateId !== 'youth-day' && state.templateId !== 'independence-day' && state.templateId !== 'sports-day' && state.templateId !== 'indian-air-force-day' && state.templateId !== 'un-day' && (
+              {state.templateId !== 'youth-day' && state.templateId !== 'independence-day' && state.templateId !== 'sports-day' && state.templateId !== 'indian-air-force-day' && state.templateId !== 'un-day' && state.templateId !== 'world-diabetes-day' && (
                 <div className="flex flex-col space-y-1.5">
                   <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Select Poster Template Style</span>
                   <div className="flex space-x-3 overflow-x-auto pb-1 px-1 scroll-smooth snap-x">
-                    {TEMPLATES.filter(tpl => tpl.id !== 'youth-day' && tpl.id !== 'sports-day' && tpl.id !== 'independence-day' && tpl.id !== 'indian-air-force-day' && tpl.id !== 'un-day').map((tpl) => {
+                    {TEMPLATES.filter(tpl => tpl.id !== 'youth-day' && tpl.id !== 'sports-day' && tpl.id !== 'independence-day' && tpl.id !== 'indian-air-force-day' && tpl.id !== 'un-day' && tpl.id !== 'world-diabetes-day').map((tpl) => {
                       const isSelected = state.templateId === tpl.id;
                       return (
                         <button

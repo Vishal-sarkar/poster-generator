@@ -7,6 +7,7 @@ import { template as heartDay } from './heart-day/template';
 import { template as indianAirForceDay } from './indian-air-force-day/template';
 import { template as unDay } from './un-day/template';
 import { template as nationalUnityDay } from './national-unity-day/template';
+import { template as worldDiabetesDay } from './world-diabetes-day/template';
 import { TemplateConfig } from '../types';
 
 export const TEMPLATES: TemplateConfig[] = [
@@ -19,6 +20,7 @@ export const TEMPLATES: TemplateConfig[] = [
   indianAirForceDay,
   unDay,
   nationalUnityDay,
+  worldDiabetesDay,
 ];
 
 export function getTemplateForEvent(eventName: string): TemplateConfig | null {
@@ -46,6 +48,9 @@ export function getTemplateForEvent(eventName: string): TemplateConfig | null {
   }
   if (norm === 'national-unity-day' || norm === 'national_unity_day') {
     return nationalUnityDay;
+  }
+  if (norm === 'world-diabetes-day' || norm === 'world_diabetes_day') {
+    return worldDiabetesDay;
   }
   if (norm) {
     return morningRide;
