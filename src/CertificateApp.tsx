@@ -183,6 +183,7 @@ export default function CertificateApp() {
         const isUNDay = template.id === 'un-day';
         const isUnityDay = template.id === 'national-unity-day';
         const isDiabetesDay = template.id === 'world-diabetes-day';
+        const isMenDay = template.id === 'men-day';
         return {
           ...initialData,
           selectedTemplateId: template.id,
@@ -194,8 +195,10 @@ export default function CertificateApp() {
             ? (isWalkRunning ? 'National Unity Day Run/Walk Virtual Challenge' : 'National Unity Day Cycling Virtual Challenge')
             : isDiabetesDay
             ? (isWalkRunning ? 'World Diabetes Day Run/Walk Virtual Challenge' : 'World Diabetes Day Cycling Virtual Challenge')
+            : isMenDay
+            ? (isWalkRunning ? "International Men's Day Run/Walk Virtual Challenge" : "International Men's Day Cycling Virtual Challenge")
             : initialData.rideName,
-          rideDate: isIAF ? '2026-10-08' : isUNDay ? '2026-10-24' : isUnityDay ? '2026-10-31' : isDiabetesDay ? '2026-11-14' : initialData.rideDate,
+          rideDate: isIAF ? '2026-10-08' : isUNDay ? '2026-10-24' : isUnityDay ? '2026-10-31' : isDiabetesDay ? '2026-11-14' : isMenDay ? '2026-11-19' : initialData.rideDate,
         };
       }
     }
@@ -335,6 +338,13 @@ export default function CertificateApp() {
                 : 'World Diabetes Day Cycling Virtual Challenge';
               if (!prev.rideDate) {
                 nextRideDate = '2026-11-14';
+              }
+            } else if (template.id === 'men-day' && (!prev.rideName || prev.rideName.includes("Men's Day") || prev.rideName.includes("Mens Day") || prev.rideName.includes("Men’s Day"))) {
+              nextRideName = path.includes('/walk-runing') 
+                ? "International Men's Day Run/Walk Virtual Challenge"
+                : "International Men's Day Cycling Virtual Challenge";
+              if (!prev.rideDate) {
+                nextRideDate = '2026-11-19';
               }
             }
           }
